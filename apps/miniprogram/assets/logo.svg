@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#21BFFF"/>
+      <stop offset="100%" stop-color="#6C5CE7"/>
+    </linearGradient>
+    <linearGradient id="check" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e0f5ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 圆角正方形背景 -->
+  <rect x="16" y="16" width="480" height="480" rx="96" ry="96" fill="url(#bg)" filter="url(#shadow)"/>
+
+  <!-- 待办清单卡片 -->
+  <rect x="120" y="100" width="272" height="320" rx="28" ry="28" fill="#ffffff" opacity="0.95" filter="url(#shadow)"/>
+
+  <!-- 第一行：已完成勾选 -->
+  <rect x="156" y="140" width="36" height="36" rx="8" ry="8" fill="url(#bg)" opacity="0.9"/>
+  <polyline points="164,158 174,170 190,148" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="208" y="148" width="148" height="12" rx="6" ry="6" fill="#21BFFF" opacity="0.3"/>
+  <rect x="208" y="166" width="96" height="8" rx="4" ry="4" fill="#94A3B8" opacity="0.25"/>
+
+  <!-- 第二行：已完成勾选 -->
+  <rect x="156" y="210" width="36" height="36" rx="8" ry="8" fill="url(#bg)" opacity="0.9"/>
+  <polyline points="164,228 174,240 190,218" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="208" y="218" width="120" height="12" rx="6" ry="6" fill="#21BFFF" opacity="0.3"/>
+  <rect x="208" y="236" width="80" height="8" rx="4" ry="4" fill="#94A3B8" opacity="0.25"/>
+
+  <!-- 第三行：未完成 -->
+  <rect x="156" y="280" width="36" height="36" rx="8" ry="8" fill="none" stroke="#21BFFF" stroke-width="3" opacity="0.5"/>
+  <rect x="208" y="288" width="140" height="12" rx="6" ry="6" fill="#94A3B8" opacity="0.2"/>
+  <rect x="208" y="306" width="108" height="8" rx="4" ry="4" fill="#94A3B8" opacity="0.15"/>
+
+  <!-- 第四行：未完成 -->
+  <rect x="156" y="350" width="36" height="36" rx="8" ry="8" fill="none" stroke="#21BFFF" stroke-width="3" opacity="0.5"/>
+  <rect x="208" y="358" width="130" height="12" rx="6" ry="6" fill="#94A3B8" opacity="0.2"/>
+  <rect x="208" y="376" width="88" height="8" rx="4" ry="4" fill="#94A3B8" opacity="0.15"/>
+
+  <!-- 魔法棒 -->
+  <g transform="translate(340, 120) rotate(-35)" filter="url(#glow)">
+    <rect x="0" y="0" width="8" height="120" rx="4" ry="4" fill="#ffffff" opacity="0.95"/>
+    <polygon points="-12,-18 4,-4 20,-18 10,0 20,18 4,4 -12,18 -2,0" fill="#FFD700" transform="translate(4, -14)"/>
+  </g>
+
+  <!-- 星星装饰 -->
+  <g fill="#FFD700" filter="url(#glow)">
+    <!-- 大星 -->
+    <polygon points="400,88 404,78 408,88 418,88 410,94 413,104 404,98 395,104 398,94 390,88" opacity="0.9"/>
+    <!-- 小星1 -->
+    <polygon points="370,140 372,135 374,140 379,140 375,143 377,148 372,145 367,148 369,143 365,140" opacity="0.7" transform="scale(0.8) translate(80, 30)"/>
+    <!-- 小星2 -->
+    <polygon points="420,140 422,135 424,140 429,140 425,143 427,148 422,145 417,148 419,143 415,140" opacity="0.6"/>
+  </g>
+
+  <!-- 底部小光点 -->
+  <circle cx="380" cy="180" r="3" fill="#ffffff" opacity="0.7"/>
+  <circle cx="410" cy="160" r="2" fill="#ffffff" opacity="0.5"/>
+  <circle cx="360" cy="110" r="2.5" fill="#FFD700" opacity="0.6"/>
+</svg>

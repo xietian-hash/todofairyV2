@@ -1,0 +1,8 @@
+<view
+  wx:if="{{visible}}"
+  class="ui-toast ui-toast-{{type}} {{active ? 'ui-toast-active' : 'ui-toast-hide'}}"
+  style="top: {{top}}px;"
+>
+  <view class="ui-toast-accent"></view>
+  <text class="ui-toast-text">{{text}}</text>
+</view>

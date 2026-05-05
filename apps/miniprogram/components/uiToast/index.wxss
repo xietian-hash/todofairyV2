@@ -1,0 +1,60 @@
+.ui-toast {
+  position: fixed;
+  left: 30rpx;
+  right: 30rpx;
+  min-height: 72rpx;
+  border-radius: 8rpx;
+  padding: 14rpx 18rpx;
+  box-sizing: border-box;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14rpx;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-12rpx);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  background: #ffffff;
+  border: 1rpx solid #e2e8f0;
+  box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.1);
+}
+
+.ui-toast-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ui-toast-hide {
+  opacity: 0;
+  transform: translateY(-12rpx);
+}
+
+.ui-toast-accent {
+  width: 8rpx;
+  align-self: stretch;
+  border-radius: 6rpx;
+  background: #21bfff;
+}
+
+.ui-toast-success .ui-toast-accent {
+  background: #22c55e;
+}
+
+.ui-toast-error .ui-toast-accent {
+  background: #ef4444;
+}
+
+.ui-toast-info .ui-toast-accent {
+  background: #21bfff;
+}
+
+.ui-toast-text {
+  color: #1e293b;
+  font-size: 26rpx;
+  line-height: 1.5;
+  font-weight: 500;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}

@@ -1,0 +1,398 @@
+<view class="page" style="padding-top: {{statusBarHeight + navBarHeight}}px">
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="custom-nav-bar" style="height: {{navBarHeight}}px">
+      <text class="nav-title">任务精灵</text>
+    </view>
+  </view>
+  <ui-toast id="uiToast" top="{{statusBarHeight + navBarHeight + 12}}"></ui-toast>
+  <block wx:if="{{currentView==='todo'}}">
+    <view class="calendar-card">
+      <view class="calendar-banner">
+        <view class="calendar-head">
+          <button class="month-btn" data-delta="-1" bindtap="onMonthShift">‹</button>
+          <view class="month-text">{{currentMonth}}</view>
+          <button class="month-btn" data-delta="1" bindtap="onMonthShift">›</button>
+        </view>
+      </view>
+      <view class="week-row">
+        <text>一</text>
+        <text>二</text>
+        <text>三</text>
+        <text>四</text>
+        <text>五</text>
+        <text>六</text>
+        <text>日</text>
+      </view>
+      <view class="day-grid">
+        <block wx:for="{{calendarCells}}" wx:key="key">
+          <view
+            wx:if="{{item.type==='day'}}"
+            class="day-cell status-{{item.status}} {{item.isToday ? 'today' : ''}} {{item.isSelected ? 'selected' : ''}}"
+            data-date="{{item.date}}"
+            bindtap="onSelectDate"
+          >
+            <text>{{item.day}}</text>
+            <view class="today-dot"></view>
+          </view>
+          <view wx:else class="day-cell empty"></view>
+        </block>
+      </view>
+    </view>
+
+    <view class="progress-card">
+      <view class="progress-header">
+        <text class="progress-label">{{selectedDate}}</text>
+        <text class="progress-count">{{completedCount}}/{{total}}</text>
+      </view>
+      <view class="progress-track">
+        <view class="progress-fill" style="width: {{progressPercent}}%"></view>
+      </view>
+    </view>
+
+    <view class="todo-list" wx:if="{{todos.length>0}}">
+      <block wx:for="{{todos}}" wx:key="_id">
+        <view class="todo-swipe-item">
+          <view class="todo-delete-area">
+            <view class="todo-delete-btn" data-todo-id="{{item._id}}" bindtap="onDeleteTodo">删除</view>
+          </view>
+          <view
+            class="todo-swipe-content {{movingTodoId===item._id ? 'moving' : ''}}"
+            data-todo-id="{{item._id}}"
+            bindtouchstart="onTodoTouchStart"
+            bindtouchmove="onTodoTouchMove"
+            bindtouchend="onTodoTouchEnd"
+            bindtouchcancel="onTodoTouchCancel"
+            bindtap="onTodoCardTap"
+            style="transform: translateX({{movingTodoId===item._id ? movingOffset : (openedTodoId===item._id ? (0 - todoSwipeDeleteWidthPx) : 0)}}px);"
+          >
+            <view class="todo-card {{item.status===2 ? 'done' : ''}} {{item.isExpired ? 'expired' : ''}} {{item.isSubTodo ? 'sub-todo' : ''}}">
+              <view class="todo-main">
+                <view class="todo-content-row">
+                  <text wx:if="{{item.isSubTodo}}" class="sub-todo-prefix">子</text>
+                  <view class="todo-title">{{item.title}}</view>
+                  <text wx:if="{{item.tagName}}" class="todo-tag" style="background: {{item.tagColorBg}}; color: {{item.tagColorText}};">{{item.tagName}}</text>
+                  <text wx:if="{{item.isExpired}}" class="expired-tag">已失效</text>
+                </view>
+                <button
+                  class="check-btn {{item.status===2 ? 'checked' : ''}}"
+                  data-todo-id="{{item._id}}"
+                  data-status="{{item.status}}"
+                  catchtap="onToggleTodoStatus"
+                >
+                  {{item.status===2 ? '✓' : ''}}
+                </button>
+              </view>
+              <view wx:if="{{item.hasSubTodos}}" class="todo-sub-toggle-row">
+                <view
+                  class="todo-sub-toggle-btn {{item.subTodosCollapsed ? '' : 'expanded'}}"
+                  data-parent-todo-id="{{item._id}}"
+                  catchtap="onToggleParentTodoCollapse"
+                >
+                  <view class="todo-sub-toggle-lines">
+                    <view class="todo-sub-toggle-line long"></view>
+                    <view class="todo-sub-toggle-line short"></view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+    <view class="empty-state" wx:else>
+      <view class="empty-title">这一天暂无待办</view>
+      <view class="empty-desc">点击右下角 + ，添加你的第一个任务</view>
+    </view>
+  </block>
+
+  <block wx:elif="{{currentView==='task'}}">
+    <view class="task-list" wx:if="{{tasks.length>0}}">
+      <block wx:for="{{tasks}}" wx:key="_id">
+        <view class="task-swipe-item">
+          <view class="task-action-area">
+            <view class="task-stats-btn" data-task-id="{{item._id}}" bindtap="onOpenTaskStats">数据</view>
+            <view class="task-delete-btn" data-task-id="{{item._id}}" bindtap="onDeleteTask">删除</view>
+          </view>
+          <view
+            class="task-swipe-content {{movingTaskId===item._id ? 'moving' : ''}}"
+            data-task-id="{{item._id}}"
+            bindtouchstart="onTaskTouchStart"
+            bindtouchmove="onTaskTouchMove"
+            bindtouchend="onTaskTouchEnd"
+            bindtouchcancel="onTaskTouchCancel"
+            bindtap="onTaskCardTap"
+            style="transform: translateX({{movingTaskId===item._id ? movingTaskOffset : (openedTaskId===item._id ? (0 - taskSwipeActionWidthPx) : 0)}}px);"
+          >
+            <view class="task-card {{item.status===0 ? 'disabled' : ''}}">
+              <view class="task-row">
+                <view class="task-title-wrap">
+                  <text wx:if="{{item.isParentTask}}" class="sub-todo-prefix">父</text>
+                  <text class="task-title">{{item.title}}</text>
+                </view>
+                <text wx:if="{{item.tagName}}" class="task-tag" style="background: {{item.tagColorBg}}; color: {{item.tagColorText}};">{{item.tagName}}</text>
+              </view>
+              <view class="task-row task-meta">
+                <text wx:if="{{item.repeatText}}" class="task-repeat">{{item.repeatText}}</text>
+                <text class="task-date">{{item.dateRangeText}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+    <view class="empty-state" wx:else>
+      <view class="empty-title">{{taskListLoading ? "任务加载中..." : "暂无任务"}}</view>
+      <view class="empty-desc">{{taskListLoading ? "请稍候" : "点击右下角 + 创建任务"}}</view>
+    </view>
+  </block>
+
+  <view class="bottom-bar">
+    <view class="menu-btn" bindtap="onOpenMenuDrawer">☰</view>
+    <view
+      class="view-switcher"
+      bindtouchstart="onViewSwitchTouchStart"
+      bindtouchmove="onViewSwitchTouchMove"
+      bindtouchend="onViewSwitchTouchEnd"
+      bindtouchcancel="onViewSwitchTouchCancel"
+    >
+      <view class="view-switch-thumb {{currentView==='task' ? 'to-task' : ''}}"></view>
+      <view class="view-switch-option {{currentView==='todo' ? 'active' : ''}}" data-view="todo" bindtap="onSwitchView">待办</view>
+      <view class="view-switch-option {{currentView==='task' ? 'active' : ''}}" data-view="task" bindtap="onSwitchView">任务</view>
+    </view>
+    <view class="quick-create-btn" bindtap="onOpenCreateTask">+</view>
+  </view>
+
+  <view wx:if="{{todoModalVisible}}" class="modal-mask" bindtap="onTodoMaskTap" catchtouchmove="onTodoMaskTouchMove">
+    <view class="modal-panel" animation="{{todoModalAnimation}}" catchtap="onTodoPanelTap">
+      <view class="modal-header">
+        <text class="modal-title">编辑待办</text>
+        <view class="close-btn" bindtap="onCloseTodoModal">×</view>
+      </view>
+      <scroll-view class="modal-body" scroll-y enhanced="{{true}}" show-scrollbar="{{false}}" scroll-into-view="{{modalScrollIntoView}}" scroll-with-animation="{{false}}">
+        <view id="todo-title-field" class="form-item">
+          <input class="input" placeholder="请输入待办标题" value="{{todoForm.title}}" bindinput="onTodoTitleInput" bindfocus="scrollModalInputIntoView" data-scroll-id="todo-title-field" maxlength="64" focus="{{todoTitleFocus}}" adjust-position="{{false}}" />
+        </view>
+
+        <view id="todo-remark-field" class="form-item">
+          <textarea class="textarea" placeholder="请输入备注（可选）" value="{{todoForm.remark}}" bindinput="onTodoRemarkInput" bindfocus="scrollModalInputIntoView" data-scroll-id="todo-remark-field" maxlength="300" adjust-position="{{false}}"></textarea>
+        </view>
+
+        <view class="form-item">
+          <text class="label">所属日期 *</text>
+          <picker mode="date" value="{{todoForm.todoDate}}" bindchange="onTodoDateChange">
+            <view class="picker {{todoForm.todoDate ? '' : 'picker-placeholder'}}">{{todoForm.todoDateDisplay || '请选择'}}</view>
+          </picker>
+        </view>
+
+        <view class="form-item">
+          <text class="label">标签</text>
+          <view wx:if="{{tagLoading}}" class="picker disabled">标签加载中...</view>
+          <view wx:elif="{{tagOptions.length===0}}" class="picker disabled">暂无可选标签</view>
+          <scroll-view wx:else class="tag-scroll" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+            <view class="tag-scroll-inner">
+              <block wx:for="{{tagOptions}}" wx:key="tagId">
+                <view
+                  class="tag-chip {{todoForm.tagId===item.tagId ? 'active' : ''}}"
+                  style="background: {{item.colorBg}}; color: {{item.colorText}};"
+                  data-tag-id="{{item.tagId}}"
+                  bindtap="onTodoTagTap"
+                >
+                  {{item.tagName}}
+                </view>
+              </block>
+            </view>
+          </scroll-view>
+        </view>
+        <view class="modal-keyboard-spacer" style="height: {{modalKeyboardHeight}}px;"></view>
+      </scroll-view>
+
+      <view class="modal-actions">
+        <button class="ghost-btn" bindtap="onCloseTodoModal">取消</button>
+        <button class="primary-btn" loading="{{todoModalSaving}}" bindtap="onSaveTodo">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{taskModalVisible}}" class="modal-mask" bindtap="onMaskTap" catchtouchmove="onMaskTouchMove">
+    <view class="modal-panel" animation="{{taskModalAnimation}}" catchtap="onPanelTap">
+      <view class="modal-header">
+        <text class="modal-title">{{taskModalMode==='create' ? '新建任务' : '编辑任务'}}</text>
+        <view class="close-btn" bindtap="onCloseTaskModal">×</view>
+      </view>
+      <scroll-view class="modal-body" scroll-y enhanced="{{true}}" show-scrollbar="{{false}}" scroll-into-view="{{modalScrollIntoView}}" scroll-with-animation="{{false}}">
+        <view id="task-title-field" class="form-item">
+          <input class="input" placeholder="请输入任务标题" value="{{taskForm.title}}" bindinput="onTaskTitleInput" bindfocus="scrollModalInputIntoView" data-scroll-id="task-title-field" maxlength="64" focus="{{taskTitleFocus}}" adjust-position="{{false}}" />
+        </view>
+
+        <view id="task-remark-field" class="form-item">
+          <textarea class="textarea" placeholder="请输入备注（可选）" value="{{taskForm.remark}}" bindinput="onTaskRemarkInput" bindfocus="scrollModalInputIntoView" data-scroll-id="task-remark-field" maxlength="300" adjust-position="{{false}}"></textarea>
+        </view>
+
+        <view class="form-item">
+          <view class="label-row">
+            <text class="label">子任务</text>
+            <text class="sub-task-switch {{taskForm.subTaskEnabled ? '' : 'active'}}" bindtap="onToggleTaskSubTaskEnabled">{{taskForm.subTaskEnabled ? "关闭" : "开启"}}</text>
+          </view>
+          <view wx:if="{{taskForm.subTaskEnabled}}" class="sub-task-editor">
+            <block wx:for="{{taskForm.subTasks}}" wx:key="index">
+              <view id="task-sub-task-{{index}}" class="sub-task-row">
+                <input
+                  class="input sub-task-input"
+                  placeholder="请输入子任务标题"
+                  value="{{item.title}}"
+                  data-index="{{index}}"
+                  data-scroll-id="task-sub-task-{{index}}"
+                  bindinput="onTaskSubTaskInput"
+                  bindfocus="scrollModalInputIntoView"
+                  maxlength="64"
+                  adjust-position="{{false}}"
+                />
+                <view
+                  class="sub-task-del-btn {{taskForm.subTasks.length<=1 ? 'disabled' : ''}}"
+                  data-index="{{index}}"
+                  bindtap="onDeleteTaskSubTask"
+                >删除</view>
+              </view>
+            </block>
+            <view class="sub-task-add-btn" bindtap="onAddTaskSubTask">+新增子任务</view>
+          </view>
+        </view>
+
+        <view class="form-item">
+          <view class="label-row">
+            <text class="label">标签</text>
+            <text class="tag-quick-add-btn" bindtap="onOpenTaskQuickTagEditor">+新增标签</text>
+          </view>
+          <view wx:if="{{tagLoading}}" class="picker disabled">标签加载中...</view>
+          <view wx:elif="{{tagOptions.length===0}}" class="picker disabled">暂无可选标签</view>
+          <scroll-view wx:else class="tag-scroll" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+            <view class="tag-scroll-inner">
+              <block wx:for="{{tagOptions}}" wx:key="tagId">
+                <view
+                  class="tag-chip {{taskForm.tagId===item.tagId ? 'active' : ''}}"
+                  style="background: {{item.colorBg}}; color: {{item.colorText}};"
+                  data-tag-id="{{item.tagId}}"
+                  bindtap="onTaskTagTap"
+                >
+                  {{item.tagName}}
+                </view>
+              </block>
+            </view>
+          </scroll-view>
+        </view>
+
+        <view class="form-item">
+          <text class="label">重复</text>
+          <scroll-view class="repeat-weekday-scroll" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+            <view class="repeat-weekday-group">
+              <block wx:for="{{repeatWeekdayOptions}}" wx:key="value">
+                <view
+                  class="repeat-weekday-chip {{item.selected ? 'active' : ''}}"
+                  data-weekday="{{item.value}}"
+                  bindtap="onToggleTaskRepeatWeekday"
+                >
+                  {{item.label}}
+                </view>
+              </block>
+            </view>
+          </scroll-view>
+          <view class="repeat-weekday-tip">
+            {{(taskForm.repeatWeekdays && taskForm.repeatWeekdays.length>0) ? "仅在选中星期生成待办" : "未选择：仅创建时生成一次待办"}}
+          </view>
+        </view>
+
+        <view wx:if="{{taskForm.repeatWeekdays && taskForm.repeatWeekdays.length>0}}" class="form-item row">
+          <view class="half">
+            <text class="label">开始日期 *</text>
+            <picker mode="date" value="{{taskForm.effectiveStartDate}}" bindchange="onTaskStartDateChange">
+              <view class="picker {{taskForm.effectiveStartDate ? '' : 'picker-placeholder'}}">{{taskForm.effectiveStartDateDisplay || '请选择'}}</view>
+            </picker>
+          </view>
+          <view class="half">
+            <text class="label">结束日期</text>
+            <picker mode="date" value="{{taskForm.effectiveEndDate}}" bindchange="onTaskEndDateChange">
+              <view class="picker {{taskForm.effectiveEndDate ? '' : 'picker-placeholder'}}">
+                {{taskForm.effectiveEndDateDisplay || '长期有效'}}
+              </view>
+            </picker>
+          </view>
+        </view>
+        <view class="modal-keyboard-spacer" style="height: {{modalKeyboardHeight}}px;"></view>
+      </scroll-view>
+
+      <view class="modal-actions">
+        <button class="ghost-btn" bindtap="onCloseTaskModal">取消</button>
+        <button class="primary-btn" loading="{{taskModalSaving}}" bindtap="onSaveTask">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{taskStatsModalVisible}}" class="modal-mask" bindtap="onTaskStatsMaskTap" catchtouchmove="onTaskStatsMaskTouchMove">
+    <view class="modal-panel task-stats-panel" catchtap="onTaskStatsPanelTap">
+      <view class="modal-header">
+        <text class="modal-title">任务数据</text>
+        <view class="close-btn" bindtap="onCloseTaskStatsModal">×</view>
+      </view>
+      <scroll-view class="task-stats-body" scroll-y enhanced="{{true}}" show-scrollbar="{{false}}">
+        <view class="task-stats-title">{{taskStats.title || '未命名任务'}}</view>
+        <view wx:if="{{taskStatsLoading}}" class="task-stats-state">数据加载中...</view>
+        <view wx:elif="{{taskStatsError}}" class="task-stats-state error">{{taskStatsError}}</view>
+        <block wx:else>
+          <view class="task-stats-section">
+            <view class="task-stats-section-title">全量</view>
+            <view class="task-stats-grid">
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.all.totalTodos}}</text><text class="task-stats-label">总待办数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.all.completedTodos}}</text><text class="task-stats-label">已完成数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.all.uncompletedTodos}}</text><text class="task-stats-label">未完成数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value task-stats-rate {{taskStats.all.completionRate >= 90 ? 'good' : taskStats.all.completionRate >= 60 ? 'warn' : 'bad'}}">{{taskStats.all.completionRate}}%</text><text class="task-stats-label">完成率</text></view>
+            </view>
+          </view>
+          <view class="task-stats-section">
+            <view class="task-stats-section-title">本月</view>
+            <view class="task-stats-grid">
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.month.totalTodos}}</text><text class="task-stats-label">总待办数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.month.completedTodos}}</text><text class="task-stats-label">已完成数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.month.uncompletedTodos}}</text><text class="task-stats-label">未完成数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value task-stats-rate {{taskStats.month.completionRate >= 90 ? 'good' : taskStats.month.completionRate >= 60 ? 'warn' : 'bad'}}">{{taskStats.month.completionRate}}%</text><text class="task-stats-label">完成率</text></view>
+            </view>
+          </view>
+          <view class="task-stats-section">
+            <view class="task-stats-section-title">本周</view>
+            <view class="task-stats-grid">
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.week.totalTodos}}</text><text class="task-stats-label">总待办数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.week.completedTodos}}</text><text class="task-stats-label">已完成数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value">{{taskStats.week.uncompletedTodos}}</text><text class="task-stats-label">未完成数</text></view>
+              <view class="task-stats-item"><text class="task-stats-value task-stats-rate {{taskStats.week.completionRate >= 90 ? 'good' : taskStats.week.completionRate >= 60 ? 'warn' : 'bad'}}">{{taskStats.week.completionRate}}%</text><text class="task-stats-label">完成率</text></view>
+            </view>
+          </view>
+        </block>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{taskQuickTagVisible}}" class="task-quick-tag-mask" bindtap="onTaskQuickTagMaskTap" catchtouchmove="onTaskQuickTagMaskTouchMove">
+    <view class="task-quick-tag-modal" catchtap="onTaskQuickTagPanelTap">
+      <view class="task-quick-tag-header">
+        <text class="task-quick-tag-title">新增标签</text>
+        <view class="close-btn" bindtap="onCloseTaskQuickTagEditor">×</view>
+      </view>
+      <view class="task-quick-tag-body">
+        <input
+          class="input"
+          placeholder="请输入标签名称"
+          value="{{taskQuickTagName}}"
+          bindinput="onTaskQuickTagInput"
+          maxlength="20"
+          focus="{{taskQuickTagFocus}}"
+          adjust-position="{{false}}"
+        />
+      </view>
+      <view class="task-quick-tag-footer">
+        <button class="ghost-btn" disabled="{{taskQuickTagSaving}}" bindtap="onCloseTaskQuickTagEditor">取消</button>
+        <button class="primary-btn" loading="{{taskQuickTagSaving}}" bindtap="onCreateTaskQuickTag">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="error-bar">{{errorText}}</view>
+</view>

@@ -1,0 +1,509 @@
+openapi: 3.0.3
+info:
+  title: 任务精灵 API
+  version: 0.1.0
+  description: 任务精灵独立 Node.js 后端接口契约
+servers:
+  - url: https://api.todo-fairy.local
+tags:
+  - name: Auth
+  - name: Public
+  - name: Tags
+  - name: Tasks
+  - name: Todos
+  - name: Calendar
+  - name: Notifications
+  - name: AI
+  - name: Internal
+paths:
+  /api/v1/health:
+    get:
+      tags: [Auth]
+      summary: 健康检查
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/public/runtime:
+    get:
+      tags: [Public]
+      summary: 查询运行时信息
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/auth/wechat-login:
+    post:
+      tags: [Auth]
+      summary: 微信小程序登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                devOpenId:
+                  type: string
+                  description: 本地开发联调用 openid，生产环境不应传递
+              required: [code]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/auth/profile:
+    get:
+      tags: [Auth]
+      summary: 查询当前登录用户
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/tasks:
+    get:
+      tags: [Tasks]
+      summary: 查询任务列表
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    post:
+      tags: [Tasks]
+      summary: 创建任务
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/tasks/{taskId}:
+    get:
+      tags: [Tasks]
+      summary: 查询任务详情
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    put:
+      tags: [Tasks]
+      summary: 更新任务
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    delete:
+      tags: [Tasks]
+      summary: 删除任务
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/tasks/{taskId}/stats:
+    get:
+      tags: [Tasks]
+      summary: 查询任务统计
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/tags:
+    get:
+      tags: [Tags]
+      summary: 查询标签列表
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    post:
+      tags: [Tags]
+      summary: 创建标签
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/tags/options:
+    get:
+      tags: [Tags]
+      summary: 查询标签选项
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/tags/{tagId}:
+    put:
+      tags: [Tags]
+      summary: 更新标签
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tagId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    delete:
+      tags: [Tags]
+      summary: 删除标签
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tagId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/todos:
+    get:
+      tags: [Todos]
+      summary: 查询待办列表
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/todos/compensate-today:
+    post:
+      tags: [Todos]
+      summary: 触发当日补偿
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/todos/{todoId}:
+    patch:
+      tags: [Todos]
+      summary: 更新待办
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: todoId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    delete:
+      tags: [Todos]
+      summary: 删除待办
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: todoId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/todos/{todoId}/status:
+    patch:
+      tags: [Todos]
+      summary: 更新待办状态
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: todoId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/calendar/month:
+    get:
+      tags: [Calendar]
+      summary: 查询月历状态
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema:
+            type: string
+            example: 2026-04
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/notifications/settings:
+    get:
+      tags: [Notifications]
+      summary: 查询通知设置
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    put:
+      tags: [Notifications]
+      summary: 保存通知设置
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/notifications/test-send:
+    post:
+      tags: [Notifications]
+      summary: 测试日报发送
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/notifications/test-send-weekly:
+    post:
+      tags: [Notifications]
+      summary: 测试周报发送
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/notifications/preview-content:
+    post:
+      tags: [Notifications]
+      summary: 预览通知文案
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/ai/subtasks/split:
+    post:
+      tags: [AI]
+      summary: AI拆解子任务
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/internal/daily-rollover:
+    post:
+      tags: [Internal]
+      summary: 每日日切
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/internal/daily-summary-notify:
+    post:
+      tags: [Internal]
+      summary: 每日日报通知
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/internal/weekly-summary-notify:
+    post:
+      tags: [Internal]
+      summary: 每周周报通知
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/internal/db-init:
+    post:
+      tags: [Internal]
+      summary: 初始化存储
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: ok
+        data:
+          type: object
+        traceId:
+          type: string
+      required: [code, message, data, traceId]
+    ErrorEnvelope:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 10001
+        message:
+          type: string
+          example: VALIDATION_ERROR
+        details:
+          type: object
+        traceId:
+          type: string
+      required: [code, message, traceId]

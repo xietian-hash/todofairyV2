@@ -1,0 +1,31 @@
+<view class="page" style="padding-top: {{statusBarHeight + navBarHeight}}px">
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="custom-nav-bar" style="height: {{navBarHeight}}px">
+      <view class="nav-back" bindtap="onBack">‹</view>
+      <text class="nav-title">我的</text>
+    </view>
+  </view>
+
+  <ui-toast id="uiToast" top="{{statusBarHeight + navBarHeight + 12}}"></ui-toast>
+
+  <view class="menu-content">
+    <view class="menu-section">
+      <view class="menu-item active" bindtap="onGoHome">
+        <text class="menu-item-title">今日待办</text>
+        <text class="menu-item-desc">返回首页</text>
+      </view>
+      <view class="menu-item" bindtap="onOpenTagManage">
+        <text class="menu-item-title">标签管理</text>
+        <text class="menu-item-desc">进入管理</text>
+      </view>
+      <view class="menu-item" bindtap="onOpenNotificationSettings">
+        <text class="menu-item-title">提醒设置</text>
+        <text class="menu-item-desc">配置并测试</text>
+      </view>
+      <view class="menu-item" data-feature="统计报表" bindtap="onMenuFeatureTap">
+        <text class="menu-item-title">统计报表</text>
+        <text class="menu-item-desc">即将开放</text>
+      </view>
+    </view>
+  </view>
+</view>

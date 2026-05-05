@@ -1,0 +1,8 @@
+* text=auto eol=crlf
+
+*.md text working-tree-encoding=UTF-8
+*.ts text working-tree-encoding=UTF-8
+*.js text working-tree-encoding=UTF-8
+*.json text working-tree-encoding=UTF-8
+*.yaml text working-tree-encoding=UTF-8
+*.yml text working-tree-encoding=UTF-8

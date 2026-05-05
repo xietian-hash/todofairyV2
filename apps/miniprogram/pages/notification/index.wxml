@@ -1,0 +1,57 @@
+<view class="page" style="padding-top: {{statusBarHeight + navBarHeight}}px">
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="custom-nav-bar" style="height: {{navBarHeight}}px">
+      <view class="nav-back" bindtap="onBack">‹</view>
+      <text class="nav-title">提醒设置</text>
+    </view>
+  </view>
+
+  <ui-toast id="uiToast" top="{{statusBarHeight + navBarHeight + 12}}"></ui-toast>
+
+  <view class="settings-card">
+    <view class="section-title">通知开关</view>
+
+    <view class="setting-row">
+      <view class="setting-main">
+        <text class="setting-label">每日 {{dailySummaryTime}} 日报</text>
+        <text class="setting-desc">推送当天任务完成情况，正文优先由 AI 生成。</text>
+      </view>
+      <switch checked="{{form.dailyEnabled}}" bindchange="onToggleDailyEnabled" color="#21bfff"></switch>
+    </view>
+
+    <view class="setting-row section-divider">
+      <view class="setting-main">
+        <text class="setting-label">每周一 {{weeklySummaryTime}} 周报</text>
+        <text class="setting-desc">统计上一周周一到周日，仅聚焦生成报告时仍未完成的父任务。</text>
+      </view>
+      <switch checked="{{form.weeklyEnabled}}" bindchange="onToggleWeeklyEnabled" color="#21bfff"></switch>
+    </view>
+
+    <view class="form-item">
+      <text class="label">方糖 SendKey</text>
+      <input
+        class="input"
+        placeholder="请输入 SendKey"
+        value="{{form.sendKey}}"
+        bindinput="onSendKeyInput"
+        adjust-position="{{false}}"
+      />
+      <text class="hint" wx:if="{{hasSendKey}}">已配置：{{sendKeyMasked}}</text>
+      <text class="hint" wx:else>尚未配置 SendKey</text>
+    </view>
+
+    <view class="tip">日报标题固定为“今日待办：未完成 X，已完成 Y，完成率 Z%”；周报标题固定为“上周任务：未完成 X，已完成 Y，完成率 Z%”。</view>
+    <view class="last-test {{lastTestStatus==='failed' ? 'failed' : ''}}">{{lastTestText}}</view>
+    <view class="error-text" wx:if="{{lastTestStatus==='failed' && lastTestErrorMessage}}">{{lastTestErrorMessage}}</view>
+
+    <view class="actions actions-split">
+      <button class="ghost-btn" loading="{{saving}}" bindtap="onSaveSettings">保存配置</button>
+    </view>
+    <view class="actions actions-split">
+      <button class="secondary-btn" loading="{{testingDaily}}" bindtap="onTestDailySend">测试日报</button>
+      <button class="primary-btn" loading="{{testingWeekly}}" bindtap="onTestWeeklySend">测试周报</button>
+    </view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="error-bar">{{errorText}}</view>
+</view>

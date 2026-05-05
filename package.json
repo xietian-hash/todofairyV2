@@ -1,0 +1,14 @@
+{
+  "name": "todo-fairy-optimized",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@8.5.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace @todo-fairy/api",
+    "build:api": "npm run build --workspace @todo-fairy/api"
+  }
+}

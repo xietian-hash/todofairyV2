@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String                @id @db.VarChar(64)
+  nickname       String                @default("") @db.VarChar(128)
+  avatarUrl      String                @default("") @db.VarChar(512) @map("avatar_url")
+  status         Int                   @default(1)
+  lastLoginAt    BigInt                @default(0) @map("last_login_at")
+  createdAt      BigInt                @map("created_at")
+  updatedAt      BigInt                @map("updated_at")
+  identities     UserIdentity[]
+  credentials    UserCredential[]
+  tags           UserTag[]
+  tasks          Task[]
+  todos          Todo[]
+  todoGenerationLogs    TodoGenerationLog[]
+  notificationSettings NotificationSetting[]
+  notificationLogs     NotificationLog[]
+
+  @@map("user")
+}
+
+model UserIdentity {
+  id          String @id @default(cuid()) @db.VarChar(64)
+  userId      String @map("user_id") @db.VarChar(64)
+  provider    String @db.VarChar(64)
+  identityKey String @map("identity_key") @db.VarChar(191)
+  openid      String @default("") @db.VarChar(191)
+  unionid     String @default("") @db.VarChar(191)
+  createdAt   BigInt @map("created_at")
+  updatedAt   BigInt @map("updated_at")
+  user        User   @relation(fields: [userId], references: [id])
+
+  @@unique([provider, identityKey], map: "user_identity_provider_identity_key")
+  @@index([userId], map: "user_identity_user_id")
+  @@map("user_identity")
+}
+
+model UserCredential {
+  id                String @id @default(cuid()) @db.VarChar(64)
+  userId            String @map("user_id") @db.VarChar(64)
+  passwordHash      String @default("") @map("password_hash") @db.VarChar(255)
+  passwordAlgo      String @default("") @map("password_algo") @db.VarChar(64)
+  passwordUpdatedAt BigInt @default(0) @map("password_updated_at")
+  failedLoginCount  Int    @default(0) @map("failed_login_count")
+  lockUntil         BigInt @default(0) @map("lock_until")
+  createdAt         BigInt @map("created_at")
+  updatedAt         BigInt @map("updated_at")
+  user              User   @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "user_credential_user_id")
+  @@map("user_credential")
+}
+
+model UserTag {
+  id        String @id @default(cuid()) @db.VarChar(64)
+  userId    String @map("user_id") @db.VarChar(64)
+  name      String @db.VarChar(64)
+  color     Int    @default(0)
+  sort      Int    @default(0)
+  isDeleted Boolean @default(false) @map("is_deleted")
+  createdAt BigInt @map("created_at")
+  updatedAt BigInt @map("updated_at")
+  deletedAt BigInt @default(0) @map("deleted_at")
+  user      User   @relation(fields: [userId], references: [id])
+  tasks     Task[]
+  todos     Todo[]
+
+  @@unique([userId, name], map: "user_tag_user_id_name")
+  @@index([userId, sort], map: "user_tag_user_id_sort")
+  @@map("user_tag")
+}
+
+model Task {
+  id                 String  @id @default(cuid()) @db.VarChar(64)
+  userId             String  @map("user_id") @db.VarChar(64)
+  title              String  @db.VarChar(128)
+  remark             String  @default("") @db.VarChar(300)
+  tagId              String? @map("tag_id") @db.VarChar(64)
+  tagName            String  @default("") @map("tag_name") @db.VarChar(64)
+  effectiveStartDate String  @map("effective_start_date") @db.VarChar(10)
+  effectiveEndDate   String? @map("effective_end_date") @db.VarChar(10)
+  repeatRuleJson     Json    @map("repeat_rule_json")
+  status             Int     @default(1)
+  isDeleted          Boolean @default(false) @map("is_deleted")
+  version            Int     @default(1)
+  subTaskEnabled     Boolean @default(false) @map("sub_task_enabled")
+  subTasksJson       Json    @map("sub_tasks_json")
+  deletedAt          BigInt  @default(0) @map("deleted_at")
+  createdAt          BigInt  @map("created_at")
+  updatedAt          BigInt  @map("updated_at")
+  user               User    @relation(fields: [userId], references: [id])
+  tag                UserTag? @relation(fields: [tagId], references: [id])
+  todoGenerationLogs TodoGenerationLog[]
+
+  @@index([userId, isDeleted, status], map: "task_user_id_is_deleted_status")
+  @@index([userId, effectiveStartDate, effectiveEndDate], map: "task_user_id_effective_date")
+  @@map("task")
+}
+
+model Todo {
+  id           String  @id @default(cuid()) @db.VarChar(64)
+  userId       String  @map("user_id") @db.VarChar(64)
+  taskId       String  @map("task_id") @db.VarChar(64)
+  parentTaskId String  @map("parent_task_id") @db.VarChar(64)
+  parentTodoId String? @map("parent_todo_id") @db.VarChar(64)
+  isSubTodo    Boolean @default(false) @map("is_sub_todo")
+  subTaskIndex Int     @default(0) @map("sub_task_index")
+  subTaskTitle String  @default("") @map("sub_task_title") @db.VarChar(128)
+  taskVersion  Int     @default(1) @map("task_version")
+  todoDate     String  @map("todo_date") @db.VarChar(10)
+  triggerType  String  @default("") @map("trigger_type") @db.VarChar(64)
+  title        String  @db.VarChar(128)
+  remark       String  @default("") @db.VarChar(300)
+  tagId        String? @map("tag_id") @db.VarChar(64)
+  tagName      String  @default("") @map("tag_name") @db.VarChar(64)
+  status       Int     @default(1)
+  completedAt  BigInt  @default(0) @map("completed_at")
+  isExpired    Boolean @default(false) @map("is_expired")
+  expiredAt    BigInt  @default(0) @map("expired_at")
+  isDeleted    Boolean @default(false) @map("is_deleted")
+  deletedAt    BigInt  @default(0) @map("deleted_at")
+  createdAt    BigInt  @map("created_at")
+  updatedAt    BigInt  @map("updated_at")
+  user         User    @relation(fields: [userId], references: [id])
+  tag          UserTag? @relation(fields: [tagId], references: [id])
+
+  @@unique([userId, taskId, todoDate], map: "todo_user_id_task_id_todo_date")
+  @@index([userId, todoDate, status], map: "todo_user_id_todo_date_status")
+  @@index([userId, parentTaskId], map: "todo_user_id_parent_task_id")
+  @@index([userId, parentTodoId], map: "todo_user_id_parent_todo_id")
+  @@map("todo")
+}
+
+model NotificationSetting {
+  id                String @id @default(cuid()) @db.VarChar(64)
+  userId            String @map("user_id") @db.VarChar(64)
+  sendKey           String @default("") @map("send_key") @db.VarChar(255)
+  dailyEnabled      Boolean @default(false) @map("daily_enabled")
+  weeklyEnabled     Boolean @default(false) @map("weekly_enabled")
+  dailyTime         String @default("22:00") @map("daily_time") @db.VarChar(16)
+  weeklyTime        String @default("09:00") @map("weekly_time") @db.VarChar(16)
+  lastTestAt        BigInt @default(0) @map("last_test_at")
+  lastTestStatus    String @default("") @map("last_test_status") @db.VarChar(32)
+  lastTestErrorMessage String @default("") @map("last_test_error_message") @db.VarChar(255)
+  createdAt         BigInt @map("created_at")
+  updatedAt         BigInt @map("updated_at")
+  user              User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId], map: "notification_setting_user_id")
+  @@map("notification_setting")
+}
+
+model NotificationLog {
+  id           String @id @default(cuid()) @db.VarChar(64)
+  userId       String @map("user_id") @db.VarChar(64)
+  summaryDate  String @map("summary_date") @db.VarChar(10)
+  channel      String @db.VarChar(64)
+  status       String @db.VarChar(32)
+  title        String @db.VarChar(255)
+  content      String @db.VarChar(1000)
+  source       String @db.VarChar(64)
+  errorCode    String @default("") @map("error_code") @db.VarChar(64)
+  errorMessage String @default("") @map("error_message") @db.VarChar(255)
+  traceId      String @default("") @map("trace_id") @db.VarChar(128)
+  attemptCount Int    @default(0) @map("attempt_count")
+  createdAt    BigInt @map("created_at")
+  updatedAt    BigInt @map("updated_at")
+  deliveredAt  BigInt @default(0) @map("delivered_at")
+  lastAttemptAt BigInt @default(0) @map("last_attempt_at")
+  user         User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, summaryDate, channel], map: "notification_log_user_id_summary_date_channel")
+  @@index([userId, createdAt], map: "notification_log_user_id_created_at")
+  @@map("notification_log")
+}
+
+model TodoGenerationLog {
+  id           String @id @default(cuid()) @db.VarChar(64)
+  userId       String @map("user_id") @db.VarChar(64)
+  taskId       String @map("task_id") @db.VarChar(64)
+  todoDate     String @map("todo_date") @db.VarChar(10)
+  triggerType  String @map("trigger_type") @db.VarChar(64)
+  result       String @db.VarChar(32)
+  todoId       String @default("") @map("todo_id") @db.VarChar(64)
+  errorCode    String @default("") @map("error_code") @db.VarChar(64)
+  errorMessage String @default("") @map("error_message") @db.VarChar(255)
+  traceId      String @default("") @map("trace_id") @db.VarChar(128)
+  createdAt    BigInt @map("created_at")
+  user         User   @relation(fields: [userId], references: [id])
+  task         Task?  @relation(fields: [taskId], references: [id])
+
+  @@index([userId, todoDate], map: "todo_generation_log_user_id_todo_date")
+  @@index([taskId, todoDate], map: "todo_generation_log_task_id_todo_date")
+  @@index([userId, triggerType, createdAt], map: "todo_generation_log_user_id_trigger_type_created_at")
+  @@map("todo_generation_log")
+}

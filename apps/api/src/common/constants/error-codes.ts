@@ -1,0 +1,10 @@
+export const ERROR_CODES = {
+  VALIDATION_ERROR: 40001,
+  UNAUTHORIZED: 40101,
+  FORBIDDEN: 40301,
+  NOT_FOUND: 40401,
+  CONFLICT: 40901,
+  INTERNAL_ERROR: 50001,
+} as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

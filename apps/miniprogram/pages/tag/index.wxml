@@ -1,0 +1,90 @@
+<view class="page" style="padding-top: {{statusBarHeight + navBarHeight}}px">
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="custom-nav-bar" style="height: {{navBarHeight}}px">
+      <view class="nav-back" bindtap="onBack">‹</view>
+      <text class="nav-title">标签管理</text>
+    </view>
+  </view>
+
+  <ui-toast id="uiToast" top="{{statusBarHeight + navBarHeight + 12}}"></ui-toast>
+
+  <view class="loading-state" wx:if="{{loading && !ready}}">标签加载中...</view>
+
+  <view class="tag-list" wx:elif="{{tags.length>0}}">
+    <block wx:for="{{tags}}" wx:key="tagId">
+      <view class="tag-swipe-item">
+        <view class="tag-delete-area">
+          <view class="tag-delete-btn" data-tag-id="{{item.tagId}}" catchtap="onDeleteTag">删除</view>
+        </view>
+        <view
+          class="tag-swipe-content {{movingTagId===item.tagId ? 'moving' : ''}}"
+          data-tag-id="{{item.tagId}}"
+          bindtouchstart="onTagTouchStart"
+          bindtouchmove="onTagTouchMove"
+          bindtouchend="onTagTouchEnd"
+          bindtouchcancel="onTagTouchCancel"
+          bindtap="onTagCardTap"
+          style="transform: translateX({{movingTagId===item.tagId ? movingOffset : (openedTagId===item.tagId ? (0 - swipeDeleteWidthPx) : 0)}}px);"
+        >
+          <view class="tag-card">
+            <view class="tag-card-left">
+              <view class="tag-color-dot" style="background: {{colorOptions[item.color].bg}}; border-color: {{colorOptions[item.color].text}};"></view>
+              <text class="tag-name">{{item.tagName}}</text>
+            </view>
+            <view class="tag-edit-btn" data-tag-id="{{item.tagId}}" catchtap="onOpenEditTag">编辑</view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="empty-state" wx:else>
+    <view class="empty-title">暂无标签</view>
+    <view class="empty-desc">点击右下角 + 新增标签</view>
+  </view>
+
+  <view class="fab-btn" bindtap="onOpenCreateTag">+</view>
+
+  <view wx:if="{{tagModalVisible}}" class="modal-mask" bindtap="onMaskTap" catchtouchmove="onMaskTouchMove">
+    <view class="modal-panel" animation="{{tagModalAnimation}}" catchtap="onPanelTap" style="margin-bottom: {{tagModalKeyboardHeight}}px;">
+      <view class="modal-header">
+        <text class="modal-title">{{tagModalMode==='create' ? '新增标签' : '编辑标签'}}</text>
+        <view class="close-btn" bindtap="onCloseTagModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <input
+            class="input"
+            placeholder="请输入标签名称"
+            value="{{tagForm.tagName}}"
+            bindinput="onTagNameInput"
+            maxlength="20"
+            focus="{{tagNameFocus}}"
+            adjust-position="{{false}}"
+          />
+        </view>
+        <view class="form-item">
+          <text class="label">颜色</text>
+          <view class="color-picker">
+            <block wx:for="{{colorOptions}}" wx:key="index" wx:for-item="colorItem">
+              <view
+                class="color-option {{tagForm.color===colorItem.index ? 'active' : ''}}"
+                style="background: {{colorItem.bg}}; border-color: {{colorItem.text}};"
+                data-color-index="{{colorItem.index}}"
+                bindtap="onTagColorTap"
+              >
+                <text wx:if="{{tagForm.color===colorItem.index}}" class="color-check" style="color: {{colorItem.text}};">✓</text>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+      <view class="modal-actions">
+        <button class="ghost-btn" bindtap="onCloseTagModal">取消</button>
+        <button class="primary-btn" loading="{{tagModalSaving}}" bindtap="onSaveTag">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="error-bar">{{errorText}}</view>
+</view>

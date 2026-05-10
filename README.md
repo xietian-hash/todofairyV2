@@ -44,6 +44,7 @@
 - 已提供 GitHub Actions 工作流：`.github/workflows/deploy-api.yml`
 - 当代码推送到 `main` 分支时，会自动部署后端服务
 - 部署目标为 Ubuntu 24.04 服务器，部署目录为 `~/api-todofairyV2`
+- Workflow 会先将部署包生成到 GitHub Actions runner 临时目录，再通过 SCP 上传到服务器，避免 `tar` 在打包当前目录时触发 `file changed as we read it`
 - 部署方式为服务器本地执行 `docker compose -f docker-compose.deploy.yml build`、数据库迁移和容器重启
 - 后端镜像定义位于 `apps/api/Dockerfile`
 
@@ -53,9 +54,14 @@
 - `DEPLOY_PORT`：SSH 端口，例如 `22`
 - `DEPLOY_USER`：SSH 登录用户
 - `DEPLOY_SSH_KEY`：用于部署的私钥内容
-- `PROD_ENV_FILE`：生产环境 `.env.production` 的完整文本内容
+- `PROD_DATABASE_URL`：生产数据库连接串
+- `PROD_JWT_SECRET`：生产 JWT 密钥
+- `PROD_WECHAT_APPID`：生产环境微信 AppID
+- `PROD_WECHAT_SECRET`：生产环境微信 Secret
+- `PROD_INTERNAL_API_KEY`：生产环境内部接口密钥
+- `WECHAT_ROBOT_WEBHOOK`：企业微信机器人通知地址
 
-### `PROD_ENV_FILE` 示例
+### 生产环境变量示例
 
 ```env
 PORT=3000

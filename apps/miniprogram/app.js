@@ -1,12 +1,22 @@
 const createUiToastController = require("./utils/ui-toast");
 const { envList } = require("./envList");
 
+function resolveEnv() {
+  try {
+    const { envVersion } = wx.getAccountInfoSync().miniProgram;
+    const key = envVersion === "develop" ? "local" : "production";
+    return envList.find((e) => e.key === key) || envList[0];
+  } catch (_) {
+    return envList[0];
+  }
+}
+
 App({
   onLaunch() {
-    const defaultEnv = envList[0] || {};
+    const env = resolveEnv();
     this.globalData = {
-      apiBaseUrl: defaultEnv.baseUrl || "",
-      devOpenId: defaultEnv.devOpenId || "",
+      apiBaseUrl: env.baseUrl || "",
+      devOpenId: env.devOpenId || "",
       token: "",
     };
     this.uiToast = createUiToastController();

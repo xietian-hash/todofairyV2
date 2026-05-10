@@ -24,10 +24,7 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MSG="🚀 开始部署｜任务精灵v2
-提交：${SHA:0:7} ${COMMIT_MSG}
-触发人：${ACTOR}
-详情：${RUN_URL}"
+          MSG="$(printf '🚀 开始部署｜任务精灵v2\n提交：%s %s\n触发人：%s\n详情：%s' "${SHA:0:7}" "$COMMIT_MSG" "$ACTOR" "$RUN_URL")"
           curl -s -X POST "$WEBHOOK" \
             -H 'Content-Type: application/json' \
             --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
@@ -106,10 +103,7 @@ jobs:
           ACTOR: ${{ github.actor }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MSG="✅ 部署成功｜任务精灵v2
-提交：${SHA:0:7}
-触发人：${ACTOR}
-详情：${RUN_URL}"
+          MSG="$(printf '✅ 部署成功｜任务精灵v2\n提交：%s\n触发人：%s\n详情：%s' "${SHA:0:7}" "$ACTOR" "$RUN_URL")"
           curl -s -X POST "$WEBHOOK" \
             -H 'Content-Type: application/json' \
             --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
@@ -123,10 +117,7 @@ jobs:
           ACTOR: ${{ github.actor }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MSG="❌ 部署失败｜任务精灵v2
-提交：${SHA:0:7}
-触发人：${ACTOR}
-详情：${RUN_URL}"
+          MSG="$(printf '❌ 部署失败｜任务精灵v2\n提交：%s\n触发人：%s\n详情：%s' "${SHA:0:7}" "$ACTOR" "$RUN_URL")"
           curl -s -X POST "$WEBHOOK" \
             -H 'Content-Type: application/json' \
             --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"

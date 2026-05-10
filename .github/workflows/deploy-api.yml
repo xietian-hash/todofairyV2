@@ -11,7 +11,6 @@ jobs:
     env:
       DEPLOY_DIR_NAME: api-todofairyV2
       DEPLOY_ARCHIVE: deploy-bundle.tar.gz
-      DEPLOY_ARCHIVE_DIR: ${{ runner.temp }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,7 +31,7 @@ jobs:
 
       - name: Create deploy bundle
         run: |
-          ARCHIVE_PATH="$DEPLOY_ARCHIVE_DIR/$DEPLOY_ARCHIVE"
+          ARCHIVE_PATH="$RUNNER_TEMP/$DEPLOY_ARCHIVE"
 
           tar \
             --exclude=.git \
@@ -51,7 +50,7 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "${{ env.DEPLOY_ARCHIVE_DIR }}/${{ env.DEPLOY_ARCHIVE }}"
+          source: "${{ runner.temp }}/${{ env.DEPLOY_ARCHIVE }}"
           target: "~/${{ env.DEPLOY_DIR_NAME }}"
           overwrite: true
 

@@ -38,6 +38,7 @@ jobs:
             --exclude=apps/miniprogram \
             --exclude=data \
             --exclude=coverage \
+            --exclude="$DEPLOY_ARCHIVE" \
             -czf "$DEPLOY_ARCHIVE" .
 
       - name: Upload deploy bundle

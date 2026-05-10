@@ -69,6 +69,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: DEPLOY_DIR_NAME,DEPLOY_ARCHIVE,SECRET_DATABASE_URL,SECRET_JWT_SECRET,SECRET_WECHAT_APPID,SECRET_WECHAT_SECRET,SECRET_INTERNAL_API_KEY
+          command_timeout: 30m
           script_stop: true
           script: |
             set -e

@@ -57,15 +57,19 @@ jobs:
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
         env:
-          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
           DEPLOY_DIR_NAME: ${{ env.DEPLOY_DIR_NAME }}
           DEPLOY_ARCHIVE: ${{ env.DEPLOY_ARCHIVE }}
+          SECRET_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          SECRET_JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          SECRET_WECHAT_APPID: ${{ secrets.PROD_WECHAT_APPID }}
+          SECRET_WECHAT_SECRET: ${{ secrets.PROD_WECHAT_SECRET }}
+          SECRET_INTERNAL_API_KEY: ${{ secrets.PROD_INTERNAL_API_KEY }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: PROD_ENV_FILE,DEPLOY_DIR_NAME,DEPLOY_ARCHIVE
+          envs: DEPLOY_DIR_NAME,DEPLOY_ARCHIVE,SECRET_DATABASE_URL,SECRET_JWT_SECRET,SECRET_WECHAT_APPID,SECRET_WECHAT_SECRET,SECRET_INTERNAL_API_KEY
           script_stop: true
           script: |
             set -e
@@ -77,7 +81,16 @@ jobs:
             tar -xzf "$DEPLOY_ARCHIVE"
             rm -f "$DEPLOY_ARCHIVE"
 
-            printf '%s' "$PROD_ENV_FILE" > .env.production
+            cat > .env.production <<EOF
+            PORT=3000
+            NODE_ENV=production
+            JWT_EXPIRES_IN=7d
+            DATABASE_URL=${SECRET_DATABASE_URL}
+            JWT_SECRET=${SECRET_JWT_SECRET}
+            WECHAT_APPID=${SECRET_WECHAT_APPID}
+            WECHAT_SECRET=${SECRET_WECHAT_SECRET}
+            INTERNAL_API_KEY=${SECRET_INTERNAL_API_KEY}
+            EOF
 
             docker compose -f docker-compose.deploy.yml build --pull
             docker compose -f docker-compose.deploy.yml run --rm api pnpm --filter @todo-fairy/api prisma:migrate:deploy

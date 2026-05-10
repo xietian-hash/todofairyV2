@@ -15,6 +15,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Notify deploy start
+        continue-on-error: true
+        env:
+          WEBHOOK: ${{ secrets.WECHAT_ROBOT_WEBHOOK }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          MSG="🚀 开始部署｜任务精灵v2
+提交：${SHA:0:7} ${COMMIT_MSG}
+触发人：${ACTOR}
+详情：${RUN_URL}"
+          curl -s -X POST "$WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
+
       - name: Create deploy bundle
         run: |
           tar \
@@ -66,3 +83,37 @@ jobs:
             docker compose -f docker-compose.deploy.yml run --rm api pnpm --filter @todo-fairy/api prisma:migrate:deploy
             docker compose -f docker-compose.deploy.yml up -d api
             docker image prune -f
+
+      - name: Notify deploy success
+        if: success()
+        continue-on-error: true
+        env:
+          WEBHOOK: ${{ secrets.WECHAT_ROBOT_WEBHOOK }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          MSG="✅ 部署成功｜任务精灵v2
+提交：${SHA:0:7}
+触发人：${ACTOR}
+详情：${RUN_URL}"
+          curl -s -X POST "$WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
+
+      - name: Notify deploy failure
+        if: failure()
+        continue-on-error: true
+        env:
+          WEBHOOK: ${{ secrets.WECHAT_ROBOT_WEBHOOK }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          MSG="❌ 部署失败｜任务精灵v2
+提交：${SHA:0:7}
+触发人：${ACTOR}
+详情：${RUN_URL}"
+          curl -s -X POST "$WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"

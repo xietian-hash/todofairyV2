@@ -53,6 +53,18 @@ jobs:
           target: "~"
           overwrite: true
 
+      - name: Cleanup stale build processes on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            docker compose -f ~/api-todofairyV2/docker-compose.deploy.yml stop api 2>/dev/null || true
+            docker rm -f $(docker ps -aq --filter status=exited) 2>/dev/null || true
+            docker builder prune -f 2>/dev/null || true
+
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
         env:

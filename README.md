@@ -27,13 +27,43 @@
 
 1. 根目录准备 `.env`
 2. 确保 `DATABASE_URL` 指向可用 MySQL
-3. 执行 `npm run prisma:push --workspace @todo-fairy/api`
-4. 执行 `npm run dev:api`
+3. 执行 `pnpm install`
+4. 执行 `pnpm run prisma:push`
+5. 执行 `pnpm run dev:api`
 5. 使用微信开发者工具打开 `apps/miniprogram`
 
 ## 数据库迁移
 
 - 首次接入现有库时，已提供基线 migration：`apps/api/prisma/migrations/20260501103500_init_mysql_schema`
-- 查看迁移状态：`npm run prisma:migrate:status --workspace @todo-fairy/api`
-- 开发新增字段：`npm run prisma:migrate:dev --workspace @todo-fairy/api -- --name <migration_name>`
-- 部署迁移：`npm run prisma:migrate:deploy --workspace @todo-fairy/api`
+- 查看迁移状态：`pnpm run prisma:migrate:status`
+- 开发新增字段：`pnpm run prisma:migrate:dev -- --name <migration_name>`
+- 部署迁移：`pnpm run prisma:migrate:deploy`
+
+## 自动部署
+
+- 已提供 GitHub Actions 工作流：`.github/workflows/deploy-api.yml`
+- 当代码推送到 `main` 分支时，会自动部署后端服务
+- 部署目标为 Ubuntu 24.04 服务器，部署目录为 `~/api-todofairyV2`
+- 部署方式为服务器本地执行 `docker compose -f docker-compose.deploy.yml build`、数据库迁移和容器重启
+- 后端镜像定义位于 `apps/api/Dockerfile`
+
+### 需要配置的 GitHub Secrets
+
+- `DEPLOY_HOST`：服务器地址
+- `DEPLOY_PORT`：SSH 端口，例如 `22`
+- `DEPLOY_USER`：SSH 登录用户
+- `DEPLOY_SSH_KEY`：用于部署的私钥内容
+- `PROD_ENV_FILE`：生产环境 `.env.production` 的完整文本内容
+
+### `PROD_ENV_FILE` 示例
+
+```env
+PORT=3000
+DATABASE_URL=mysql://user:password@127.0.0.1:3306/tasksprite
+JWT_SECRET=replace_me
+JWT_EXPIRES_IN=7d
+WECHAT_APPID=replace_me
+WECHAT_SECRET=replace_me
+INTERNAL_API_KEY=replace_me
+NODE_ENV=production
+```

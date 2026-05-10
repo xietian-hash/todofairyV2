@@ -26,3 +26,7 @@ pnpm-debug.log*
 data/
 历史数据/
 package-lock.json
+密钥/
+*.pem
+deploy-bundle.tar.gz
+.claude/

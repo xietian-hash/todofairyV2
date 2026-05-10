@@ -2,7 +2,7 @@
   "libVersion": "3.15.2",
   "projectname": "%E4%BB%BB%E5%8A%A1%E7%B2%BE%E7%81%B5",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "coverView": true,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,

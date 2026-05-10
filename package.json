@@ -2,13 +2,13 @@
   "name": "todo-fairy-optimized",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "npm@8.5.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@10.11.0",
   "scripts": {
-    "dev:api": "npm run start:dev --workspace @todo-fairy/api",
-    "build:api": "npm run build --workspace @todo-fairy/api"
+    "dev:api": "pnpm --filter @todo-fairy/api start:dev",
+    "build:api": "pnpm --filter @todo-fairy/api build",
+    "prisma:push": "pnpm --filter @todo-fairy/api prisma:push",
+    "prisma:migrate:status": "pnpm --filter @todo-fairy/api prisma:migrate:status",
+    "prisma:migrate:dev": "pnpm --filter @todo-fairy/api prisma:migrate:dev",
+    "prisma:migrate:deploy": "pnpm --filter @todo-fairy/api prisma:migrate:deploy"
   }
 }

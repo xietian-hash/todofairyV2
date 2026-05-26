@@ -12,7 +12,7 @@ const envList = [
   {
     key: "production",
     label: "体验/正式",
-    baseUrl: "http://8.136.140.47:3000",
+    baseUrl: "https://api-task.aitrealmaker.top",
     devOpenId: "",
   },
 ];

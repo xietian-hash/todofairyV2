@@ -35,11 +35,10 @@ RUN corepack enable
 
 WORKDIR /app
 
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
-
-RUN pnpm install --frozen-lockfile --registry https://registry.npmmirror.com
-
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY apps/api/prisma ./apps/api/prisma
 

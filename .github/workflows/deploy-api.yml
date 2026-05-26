@@ -47,15 +47,18 @@ jobs:
             -czf "$DEPLOY_ARCHIVE" . || [ "$?" -eq 1 ]
 
       - name: Upload deploy bundle
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "${{ env.DEPLOY_ARCHIVE }}"
-          target: "~"
-          overwrite: true
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          KEY_FILE=$(mktemp)
+          echo "$SSH_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          scp -i "$KEY_FILE" -P "$PORT" -o StrictHostKeyChecking=no \
+            "$DEPLOY_ARCHIVE" "$USER@$HOST:~/"
+          rm -f "$KEY_FILE"
 
       - name: Cleanup stale build processes on server
         uses: appleboy/ssh-action@v1.0.3

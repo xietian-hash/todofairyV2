@@ -70,7 +70,7 @@ jobs:
           script: |
             docker compose -f ~/api-todofairyV2/docker-compose.deploy.yml stop api 2>/dev/null || true
             docker rm -f $(docker ps -aq --filter status=exited) 2>/dev/null || true
-            docker builder prune -f 2>/dev/null || true
+            docker builder prune --filter until=168h -f 2>/dev/null || true
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3

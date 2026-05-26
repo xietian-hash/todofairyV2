@@ -114,6 +114,25 @@ jobs:
             docker compose -f docker-compose.deploy.yml up -d api
             docker image prune -f
 
+      - name: Sync nginx config
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_DIR_NAME: ${{ env.DEPLOY_DIR_NAME }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_DIR_NAME
+          script: |
+            CERT="/etc/letsencrypt/live/api-task.aitrealmaker.top/fullchain.pem"
+            CONF_SRC="$HOME/$DEPLOY_DIR_NAME/deploy/nginx/api-task.aitrealmaker.top.conf"
+            CONF_DEST="/etc/nginx/sites-available/api-task.aitrealmaker.top"
+            if [ -f "$CERT" ] && [ -f "$CONF_SRC" ]; then
+              cp "$CONF_SRC" "$CONF_DEST"
+              nginx -t && nginx -s reload
+            fi
+
       - name: Notify deploy success
         if: success()
         continue-on-error: true

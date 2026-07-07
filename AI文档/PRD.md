@@ -703,9 +703,8 @@ mindmap
 
 | **#** | **对象** | **触发方式** | **逻辑说明** | **备注** |
 | ----- | ------ | -------- | -------- | ------ |
-| 1 | 日切任务（00:00） | 定时触发器 `dailyRollover`，每日00:00执行 | 调用 `POST /api/v1/internal/daily-rollover`，扫描生效中的任务（`status=1, isDeleted=false`），为当天在生效范围内的任务批量生成待办；同时将昨日及更早 `status=1(未完成)` 的待办批量标记为 `isExpired=true`，并写入 `expiredAt`（仅首次写入） | 使用 `(userId,taskId,todoDate)` 唯一键防重复生成；失败记录日志并支持补偿重跑 |
+| 1 | 日切任务（01:00） | NestJS 内置定时任务 `@Cron`，每日01:00（北京时间）自动执行 | 在 `InternalService.scheduledDailyRollover()` 内部直接调用 `dailyRollover()` 逻辑，扫描生效中的任务（`status=1, isDeleted=false`），为当天在生效范围内的任务批量生成待办；同时将昨日及更早 `status=1(未完成)` 的待办批量标记为 `isExpired=true`，并写入 `expiredAt`（仅首次写入）。`POST /api/v1/internal/daily-rollover` 接口仍保留，供手动补跑 | 使用 `(userId,taskId,todoDate)` 唯一键防重复生成；失败记录日志并支持补偿重跑；用户未打开 App 当天也可自动生成待办 |
 | 2 | 汇总通知（22:00） | 定时触发器 `dailySummaryNotify`，每日22:00执行 | 调用 `POST /api/v1/internal/daily-summary-notify`，扫描 `enabled=true` 的用户，按用户查询当天父任务待办汇总（未完成数、已完成数、完成率）；推送标题固定为"今日待办：未完成X，已完成Y，完成率Z%"，标题与AI输入统计统一仅按父任务计算，正文优先由AI生成（仅包含父任务标题与备注），失败时自动回退固定模板；通过方糖服务酱推送 | AI调用失败或超时不影响通知发送主流程；记录发送日志并支持后续补偿重试 |
-| 3 | 触发器识别 | 兼容识别 `event.Type/event.type` 与 `event.TriggerName/event.triggerName` | 定时事件优先走定时分流逻辑，避免误走 HTTP `path` 校验；未知触发器返回错误码 40001 并记录告警日志 | 提升定时触发器兼容性 |
 
 ### 状态说明
 

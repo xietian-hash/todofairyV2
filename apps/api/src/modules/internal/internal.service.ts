@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../../common/database/prisma.service";
 import { getNowMs, todayStr } from "../../common/utils/domain-utils";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -7,12 +8,26 @@ import { TodosService } from "../todos/todos.service";
 
 @Injectable()
 export class InternalService {
+  private readonly logger = new Logger(InternalService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tasksService: TasksService,
     private readonly todosService: TodosService,
     private readonly notificationsService: NotificationsService
   ) {}
+
+  // 每天凌晨1点（北京时间）自动触发日切，提前生成当天待办
+  @Cron("0 1 * * *", { timeZone: "Asia/Shanghai" })
+  async scheduledDailyRollover() {
+    this.logger.log("cron_0000: 开始日切");
+    try {
+      const result = await this.dailyRollover("cron_0000");
+      this.logger.log(`cron_0000: 完成，生成待办 ${result.todoGenerated} 条，过期标记 ${result.expiredMarked} 条`);
+    } catch (err) {
+      this.logger.error("cron_0000: 日切失败", err instanceof Error ? err.stack : String(err));
+    }
+  }
 
   async dailyRollover(traceId = "") {
     const today = todayStr();

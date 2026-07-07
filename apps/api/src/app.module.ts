@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
+import { ScheduleModule } from "@nestjs/schedule";
 import { AuthController } from "./auth/auth.controller";
 import { AuthService } from "./auth/auth.service";
 import { HealthController } from "./health.controller";
@@ -32,6 +33,7 @@ import { InternalService } from "./modules/internal/internal.service";
       isGlobal: true,
       envFilePath: "../../.env",
     }),
+    ScheduleModule.forRoot(),
     JwtModule.register({}),
   ],
   controllers: [

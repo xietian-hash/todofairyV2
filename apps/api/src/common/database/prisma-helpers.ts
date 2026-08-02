@@ -107,12 +107,15 @@ export function toTagResponse(tag: UserTag) {
 
 export function toNotificationSettingsResponse(settings?: NotificationSetting | null) {
   const sendKey = String(settings?.sendKey || "").trim();
+  const feishuWebhook = String(settings?.feishuWebhook || "").trim();
   return {
     enabled: Boolean(settings?.dailyEnabled),
     dailyEnabled: Boolean(settings?.dailyEnabled),
     weeklyEnabled: Boolean(settings?.weeklyEnabled),
     hasSendKey: Boolean(sendKey),
     sendKeyMasked: maskSendKey(sendKey),
+    hasFeishuWebhook: Boolean(feishuWebhook),
+    feishuWebhookMasked: maskFeishuWebhook(feishuWebhook),
     dailySummaryTime: settings?.dailyTime || "22:00",
     weeklySummaryTime: settings?.weeklyTime || "09:00",
     lastTestAt: Number(settings?.lastTestAt) || 0,
@@ -146,4 +149,10 @@ function maskSendKey(value: string) {
     return value;
   }
   return `${value.slice(0, 4)}****${value.slice(-4)}`;
+}
+
+function maskFeishuWebhook(value: string) {
+  if (!value) return "";
+  if (value.length <= 30) return `${value.slice(0, 20)}****`;
+  return `${value.slice(0, 30)}****`;
 }

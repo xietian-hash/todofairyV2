@@ -179,9 +179,7 @@
 
         <view class="form-item">
           <text class="label">所属日期 *</text>
-          <picker mode="date" value="{{todoForm.todoDate}}" bindchange="onTodoDateChange">
-            <view class="picker {{todoForm.todoDate ? '' : 'picker-placeholder'}}">{{todoForm.todoDateDisplay || '请选择'}}</view>
-          </picker>
+          <view class="picker {{todoForm.todoDate ? '' : 'picker-placeholder'}}" data-target="todoDate" bindtap="onOpenCalendarPicker">{{todoForm.todoDateDisplay || '请选择'}}</view>
         </view>
 
         <view class="form-item">
@@ -297,24 +295,23 @@
             </view>
           </scroll-view>
           <view class="repeat-weekday-tip">
-            {{(taskForm.repeatWeekdays && taskForm.repeatWeekdays.length>0) ? "仅在选中星期生成待办" : "未选择：仅创建时生成一次待办"}}
+            {{(taskForm.repeatWeekdays && taskForm.repeatWeekdays.length>0) ? "仅在选中星期生成待办" : "未选择：在指定日期生成一次待办"}}
           </view>
+        </view>
+
+        <view wx:if="{{!(taskForm.repeatWeekdays && taskForm.repeatWeekdays.length>0)}}" class="form-item">
+          <text class="label">待办日期 *</text>
+          <view class="picker {{taskForm.todoDate ? '' : 'picker-placeholder'}}" data-target="taskTodoDate" bindtap="onOpenCalendarPicker">{{taskForm.todoDateDisplay || '请选择'}}</view>
         </view>
 
         <view wx:if="{{taskForm.repeatWeekdays && taskForm.repeatWeekdays.length>0}}" class="form-item row">
           <view class="half">
             <text class="label">开始日期 *</text>
-            <picker mode="date" value="{{taskForm.effectiveStartDate}}" bindchange="onTaskStartDateChange">
-              <view class="picker {{taskForm.effectiveStartDate ? '' : 'picker-placeholder'}}">{{taskForm.effectiveStartDateDisplay || '请选择'}}</view>
-            </picker>
+            <view class="picker {{taskForm.effectiveStartDate ? '' : 'picker-placeholder'}}" data-target="effectiveStartDate" bindtap="onOpenCalendarPicker">{{taskForm.effectiveStartDateDisplay || '请选择'}}</view>
           </view>
           <view class="half">
             <text class="label">结束日期</text>
-            <picker mode="date" value="{{taskForm.effectiveEndDate}}" bindchange="onTaskEndDateChange">
-              <view class="picker {{taskForm.effectiveEndDate ? '' : 'picker-placeholder'}}">
-                {{taskForm.effectiveEndDateDisplay || '长期有效'}}
-              </view>
-            </picker>
+            <view class="picker {{taskForm.effectiveEndDate ? '' : 'picker-placeholder'}}" data-target="effectiveEndDate" bindtap="onOpenCalendarPicker">{{taskForm.effectiveEndDateDisplay || '长期有效'}}</view>
           </view>
         </view>
         <view class="modal-keyboard-spacer" style="height: {{modalKeyboardHeight}}px;"></view>
@@ -395,4 +392,11 @@
   </view>
 
   <view wx:if="{{errorText}}" class="error-bar">{{errorText}}</view>
+
+  <calendar-picker
+    show="{{calendarPickerShow}}"
+    value="{{calendarPickerValue}}"
+    bind:change="onCalendarPickerChange"
+    bind:close="onCalendarPickerClose"
+  ></calendar-picker>
 </view>

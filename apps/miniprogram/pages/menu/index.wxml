@@ -22,9 +22,9 @@
         <text class="menu-item-title">提醒设置</text>
         <text class="menu-item-desc">配置并测试</text>
       </view>
-      <view class="menu-item" data-feature="统计报表" bindtap="onMenuFeatureTap">
+      <view class="menu-item" bindtap="onOpenStats">
         <text class="menu-item-title">统计报表</text>
-        <text class="menu-item-desc">即将开放</text>
+        <text class="menu-item-desc">查看完成情况</text>
       </view>
     </view>
   </view>

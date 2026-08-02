@@ -1,0 +1,33 @@
+<view wx:if="{{show}}" class="cp-mask" catchtouchmove="noop" bindtap="onMaskTap">
+  <view class="cp-panel" animation="{{panelAnimation}}" catchtap="onPanelTap">
+    <view class="cp-header">
+      <view class="cp-nav-btn" bindtap="onPrevMonth">‹</view>
+      <text class="cp-month-text">{{currentMonth}}</text>
+      <view class="cp-nav-btn" bindtap="onNextMonth">›</view>
+    </view>
+    <view class="cp-week-row">
+      <text>一</text>
+      <text>二</text>
+      <text>三</text>
+      <text>四</text>
+      <text>五</text>
+      <text>六</text>
+      <text>日</text>
+    </view>
+    <view class="cp-day-grid">
+      <block wx:for="{{calendarCells}}" wx:key="key">
+        <view
+          wx:if="{{item.type === 'day'}}"
+          class="cp-day-cell {{item.isSelected ? 'cp-selected' : ''}} {{item.isToday ? 'cp-today' : ''}}"
+          data-date="{{item.date}}"
+          bindtap="onSelectDay"
+        >
+          <text class="cp-day-num">{{item.day}}</text>
+          <view class="cp-today-dot"></view>
+        </view>
+        <view wx:else class="cp-day-cell cp-empty"></view>
+      </block>
+    </view>
+    <view class="cp-safe-bottom"></view>
+  </view>
+</view>

@@ -186,6 +186,27 @@ function deleteTask(taskId) {
   });
 }
 
+function getStatsOverview() {
+  return request({
+    path: "/api/v1/stats/overview",
+    method: "GET",
+  });
+}
+
+function getStatsTrend() {
+  return request({
+    path: "/api/v1/stats/trend",
+    method: "GET",
+  });
+}
+
+function getStatsStreak() {
+  return request({
+    path: "/api/v1/stats/streak",
+    method: "GET",
+  });
+}
+
 module.exports = {
   login,
   getMonthCalendar,
@@ -211,4 +232,7 @@ module.exports = {
   getTaskStats,
   updateTask,
   deleteTask,
+  getStatsOverview,
+  getStatsTrend,
+  getStatsStreak,
 };

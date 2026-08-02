@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/menu/index",
     "pages/notification/index",
-    "pages/tag/index"
+    "pages/tag/index",
+    "pages/stats/index"
   ],
   "window": {
     "backgroundColor": "#F5F7FA",

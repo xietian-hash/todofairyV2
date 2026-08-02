@@ -96,6 +96,8 @@ function defaultTaskForm(today) {
     tagName: "",
     subTaskEnabled: false,
     subTasks: [defaultSubTaskItem()],
+    todoDate: today,
+    todoDateDisplay: formatDateWithWeekday(today),
     effectiveStartDate: today,
     effectiveStartDateDisplay: formatDateWithWeekday(today),
     effectiveEndDate: "",
@@ -500,6 +502,9 @@ Page({
     movingTaskId: "",
     movingTaskOffset: 0,
     todayCompensatedDate: "",
+    calendarPickerShow: false,
+    calendarPickerTarget: "",
+    calendarPickerValue: "",
   },
 
   async onLoad() {
@@ -1685,6 +1690,9 @@ Page({
     }
 
     const defaultForm = defaultTaskForm(this.data.today);
+    const selectedDate = this.data.selectedDate || this.data.today;
+    defaultForm.todoDate = selectedDate;
+    defaultForm.todoDateDisplay = formatDateWithWeekday(selectedDate);
     const shouldFocusTitle = !isEdit;
     const normalizedWeekdays = normalizeRepeatWeekdays(task && task.repeatRule && task.repeatRule.weekdays);
     const taskForm = isEdit
@@ -2169,6 +2177,60 @@ Page({
     });
   },
 
+  onTaskTodoDateChange(e) {
+    const todoDate = e.detail.value;
+    this.setData({
+      "taskForm.todoDate": todoDate,
+      "taskForm.todoDateDisplay": formatDateWithWeekday(todoDate),
+    });
+  },
+
+  onOpenCalendarPicker(e) {
+    const target = e.currentTarget.dataset.target;
+    const form = this.data;
+    const valueMap = {
+      todoDate: form.todoForm.todoDate,
+      taskTodoDate: form.taskForm.todoDate,
+      effectiveStartDate: form.taskForm.effectiveStartDate,
+      effectiveEndDate: form.taskForm.effectiveEndDate,
+    };
+    this.setData({
+      calendarPickerShow: true,
+      calendarPickerTarget: target,
+      calendarPickerValue: valueMap[target] || "",
+    });
+  },
+
+  onCalendarPickerChange(e) {
+    const { date } = e.detail;
+    const target = this.data.calendarPickerTarget;
+    if (target === "todoDate") {
+      this.setData({
+        "todoForm.todoDate": date,
+        "todoForm.todoDateDisplay": formatDateWithWeekday(date),
+      });
+    } else if (target === "taskTodoDate") {
+      this.setData({
+        "taskForm.todoDate": date,
+        "taskForm.todoDateDisplay": formatDateWithWeekday(date),
+      });
+    } else if (target === "effectiveStartDate") {
+      this.setData({
+        "taskForm.effectiveStartDate": date,
+        "taskForm.effectiveStartDateDisplay": formatDateWithWeekday(date),
+      });
+    } else if (target === "effectiveEndDate") {
+      this.setData({
+        "taskForm.effectiveEndDate": date,
+        "taskForm.effectiveEndDateDisplay": formatDateWithWeekday(date),
+      });
+    }
+  },
+
+  onCalendarPickerClose() {
+    this.setData({ calendarPickerShow: false });
+  },
+
   onToggleTaskRepeatWeekday(e) {
     const weekday = Number(e.currentTarget.dataset.weekday);
     if (!Number.isInteger(weekday) || weekday < 1 || weekday > 7) {
@@ -2198,12 +2260,23 @@ Page({
       });
       return;
     }
-    if (!taskForm.effectiveStartDate) {
-      wx.showToast({
-        title: "请选择开始日期",
-        icon: "none",
-      });
-      return;
+    const isOneTime = !taskForm.repeatWeekdays || taskForm.repeatWeekdays.length === 0;
+    if (isOneTime) {
+      if (!taskForm.todoDate) {
+        wx.showToast({
+          title: "请选择待办日期",
+          icon: "none",
+        });
+        return;
+      }
+    } else {
+      if (!taskForm.effectiveStartDate) {
+        wx.showToast({
+          title: "请选择开始日期",
+          icon: "none",
+        });
+        return;
+      }
     }
 
     const rawSubTasks = Array.isArray(taskForm.subTasks)
@@ -2256,8 +2329,12 @@ Page({
       subTasks: normalizedSubTasks.map((item) => ({
         title: item.title,
       })),
-      effectiveStartDate: taskForm.effectiveStartDate,
-      effectiveEndDate: taskForm.effectiveEndDate || null,
+      ...(isOneTime
+        ? { todoDate: taskForm.todoDate }
+        : {
+            effectiveStartDate: taskForm.effectiveStartDate,
+            effectiveEndDate: taskForm.effectiveEndDate || null,
+          }),
       repeatRule: {
         type: "weekly",
         weekdays: normalizeRepeatWeekdays(taskForm.repeatWeekdays),

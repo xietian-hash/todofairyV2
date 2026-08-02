@@ -122,6 +122,27 @@
   color: #64748b;
 }
 
+.hint-warn {
+  color: #d97706;
+}
+
+.hint-row {
+  margin-top: 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hint-row .hint {
+  margin-top: 0;
+}
+
+.clear-btn {
+  font-size: 22rpx;
+  color: #ef4444;
+  padding: 4rpx 12rpx;
+}
+
 .tip {
   margin-top: 18rpx;
   font-size: 22rpx;

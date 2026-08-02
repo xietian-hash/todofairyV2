@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "任务精灵",
-  "enablePullDownRefresh": true
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "calendar-picker": "/components/calendarPicker/index"
+  }
 }

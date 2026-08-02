@@ -1,7 +1,7 @@
 <view class="page" style="padding-top: {{statusBarHeight + navBarHeight}}px">
   <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
     <view class="custom-nav-bar" style="height: {{navBarHeight}}px">
-      <view class="nav-back" bindtap="onBack">‹</view>
+      <view class="nav-back" bindtap="onBack">&#8249;</view>
       <text class="nav-title">提醒设置</text>
     </view>
   </view>
@@ -31,16 +31,37 @@
       <text class="label">方糖 SendKey</text>
       <input
         class="input"
-        placeholder="请输入 SendKey"
+        placeholder="{{hasSendKey ? '如需修改请输入新值' : '请输入 SendKey'}}"
         value="{{form.sendKey}}"
         bindinput="onSendKeyInput"
         adjust-position="{{false}}"
       />
-      <text class="hint" wx:if="{{hasSendKey}}">已配置：{{sendKeyMasked}}</text>
+      <view class="hint-row" wx:if="{{hasSendKey && !pendingClearSendKey}}">
+        <text class="hint">已配置：{{sendKeyMasked}}</text>
+        <text class="clear-btn" bindtap="onClearSendKey">清除</text>
+      </view>
+      <text class="hint hint-warn" wx:elif="{{pendingClearSendKey}}">保存后将清除已有配置</text>
       <text class="hint" wx:else>尚未配置 SendKey</text>
     </view>
 
-    <view class="tip">日报标题固定为“今日待办：未完成 X，已完成 Y，完成率 Z%”；周报标题固定为“上周任务：未完成 X，已完成 Y，完成率 Z%”。</view>
+    <view class="form-item">
+      <text class="label">飞书 Webhook 地址</text>
+      <input
+        class="input"
+        placeholder="{{hasFeishuWebhook ? '如需修改请输入新地址' : 'https://open.feishu.cn/open-apis/bot/v2/hook/...'}}"
+        value="{{form.feishuWebhook}}"
+        bindinput="onFeishuWebhookInput"
+        adjust-position="{{false}}"
+      />
+      <view class="hint-row" wx:if="{{hasFeishuWebhook && !pendingClearFeishuWebhook}}">
+        <text class="hint">已配置：{{feishuWebhookMasked}}</text>
+        <text class="clear-btn" bindtap="onClearFeishuWebhook">清除</text>
+      </view>
+      <text class="hint hint-warn" wx:elif="{{pendingClearFeishuWebhook}}">保存后将清除已有配置</text>
+      <text class="hint" wx:else>尚未配置飞书 Webhook</text>
+    </view>
+
+    <view class="tip">日报标题固定为"今日待办：未完成 X，已完成 Y，完成率 Z%"；周报标题固定为"上周任务：未完成 X，已完成 Y，完成率 Z%"。</view>
     <view class="last-test {{lastTestStatus==='failed' ? 'failed' : ''}}">{{lastTestText}}</view>
     <view class="error-text" wx:if="{{lastTestStatus==='failed' && lastTestErrorMessage}}">{{lastTestErrorMessage}}</view>
 

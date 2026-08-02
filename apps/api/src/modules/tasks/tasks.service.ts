@@ -54,13 +54,15 @@ export class TasksService {
       });
 
       const today = todayStr();
+      const oneTime = isOneTimeTask({ repeatRule: parseRepeatRule(created.repeatRuleJson) });
+      const todoDate = oneTime ? (normalized.todoDate || today) : today;
       if (
         Number(created.status) === 1 &&
-        isDateInRange(today, created.effectiveStartDate, created.effectiveEndDate) &&
-        this.todosService.shouldTaskGenerateOnDate(created, today, "create_task")
+        (oneTime || isDateInRange(today, created.effectiveStartDate, created.effectiveEndDate)) &&
+        this.todosService.shouldTaskGenerateOnDate(created, todoDate, "create_task")
       ) {
-        const result = await this.todosService.ensureTodoForTaskDateInDb(tx, created, today, "create_task", traceId);
-        if (isOneTimeTask({ repeatRule: parseRepeatRule(created.repeatRuleJson) }) && result.created) {
+        const result = await this.todosService.ensureTodoForTaskDateInDb(tx, created, todoDate, "create_task", traceId);
+        if (oneTime && result.created) {
           await tx.task.update({
             where: { id: created.id },
             data: {
@@ -251,11 +253,19 @@ export class TasksService {
   private normalizeTaskPayload(payload: Record<string, unknown>) {
     assertString(payload.title, "任务标题", { required: true, minLen: 1, maxLen: 64 });
     assertString(payload.remark || "", "任务备注", { maxLen: 300 });
-    assertDate(String(payload.effectiveStartDate || ""), "effectiveStartDate");
+    const repeatRule = normalizeRepeatRule(payload.repeatRule, true);
+    const isOneTime = !repeatRule.weekdays.length;
+    let todoDate: string | null = null;
+    if (isOneTime && payload.todoDate) {
+      assertDate(String(payload.todoDate), "todoDate");
+      todoDate = String(payload.todoDate);
+    }
+    const effectiveStartDate = todoDate || String(payload.effectiveStartDate || "");
+    assertDate(effectiveStartDate, "effectiveStartDate");
     if (payload.effectiveEndDate) {
       assertDate(String(payload.effectiveEndDate), "effectiveEndDate");
     }
-    assertDateRange(String(payload.effectiveStartDate || ""), payload.effectiveEndDate ? String(payload.effectiveEndDate) : null);
+    assertDateRange(effectiveStartDate, payload.effectiveEndDate ? String(payload.effectiveEndDate) : null);
     const status = payload.status === undefined ? 1 : Number(payload.status);
     if (![0, 1].includes(status)) {
       throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "任务状态不合法");
@@ -265,12 +275,13 @@ export class TasksService {
     return {
       title: String(payload.title).trim(),
       remark: String(payload.remark || "").trim(),
-      effectiveStartDate: String(payload.effectiveStartDate),
+      effectiveStartDate,
       effectiveEndDate: payload.effectiveEndDate ? String(payload.effectiveEndDate) : null,
-      repeatRule: normalizeRepeatRule(payload.repeatRule, true),
+      repeatRule,
       status,
       subTaskEnabled,
       subTasks,
+      todoDate,
     };
   }
 

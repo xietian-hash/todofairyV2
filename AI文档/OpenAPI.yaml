@@ -15,6 +15,7 @@ tags:
   - name: Notifications
   - name: AI
   - name: Internal
+  - name: Stats
 paths:
   /api/v1/health:
     get:
@@ -465,6 +466,48 @@ paths:
     post:
       tags: [Internal]
       summary: 初始化存储
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/stats/overview:
+    get:
+      tags: [Stats]
+      summary: 获取统计概览
+      description: 返回今日、本周、本月的待办完成率，以及按标签分组的本月完成情况
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/stats/trend:
+    get:
+      tags: [Stats]
+      summary: 获取近30天趋势
+      description: 返回过去30天每天的待办总数、完成数和完成率
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /api/v1/stats/streak:
+    get:
+      tags: [Stats]
+      summary: 获取打卡连续天数
+      description: 返回当前连续打卡天数和历史最长连续打卡天数（当天有待办且全部完成才算打卡成功）
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: 成功

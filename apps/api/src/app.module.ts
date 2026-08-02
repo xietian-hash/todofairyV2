@@ -26,6 +26,8 @@ import { AiController } from "./modules/ai/ai.controller";
 import { AiService } from "./modules/ai/ai.service";
 import { InternalController } from "./modules/internal/internal.controller";
 import { InternalService } from "./modules/internal/internal.service";
+import { StatsController } from "./modules/stats/stats.controller";
+import { StatsService } from "./modules/stats/stats.service";
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { InternalService } from "./modules/internal/internal.service";
     NotificationsController,
     AiController,
     InternalController,
+    StatsController,
   ],
   providers: [
     PrismaService,
@@ -58,6 +61,7 @@ import { InternalService } from "./modules/internal/internal.service";
     NotificationsService,
     AiService,
     InternalService,
+    StatsService,
     {
       provide: APP_FILTER,
       useClass: AppExceptionFilter,

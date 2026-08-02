@@ -46,9 +46,14 @@ Page({
       dailyEnabled: false,
       weeklyEnabled: false,
       sendKey: "",
+      feishuWebhook: "",
     },
     hasSendKey: false,
     sendKeyMasked: "",
+    pendingClearSendKey: false,
+    hasFeishuWebhook: false,
+    feishuWebhookMasked: "",
+    pendingClearFeishuWebhook: false,
     dailySummaryTime: "22:00",
     weeklySummaryTime: "09:00",
     lastTestText: TEXT_NOT_TESTED,
@@ -121,8 +126,13 @@ Page({
       "form.dailyEnabled": Boolean(data.dailyEnabled !== undefined ? data.dailyEnabled : data.enabled),
       "form.weeklyEnabled": Boolean(data.weeklyEnabled),
       "form.sendKey": "",
+      "form.feishuWebhook": "",
       hasSendKey: Boolean(data.hasSendKey),
       sendKeyMasked: data.sendKeyMasked || "",
+      pendingClearSendKey: false,
+      hasFeishuWebhook: Boolean(data.hasFeishuWebhook),
+      feishuWebhookMasked: data.feishuWebhookMasked || "",
+      pendingClearFeishuWebhook: false,
       dailySummaryTime: data.dailySummaryTime || "22:00",
       weeklySummaryTime: data.weeklySummaryTime || "09:00",
       lastTestText: formatLastTestText(data),
@@ -149,6 +159,30 @@ Page({
     });
   },
 
+  onClearSendKey() {
+    this.setData({
+      pendingClearSendKey: true,
+      hasSendKey: false,
+      sendKeyMasked: "",
+      "form.sendKey": "",
+    });
+  },
+
+  onFeishuWebhookInput(e) {
+    this.setData({
+      "form.feishuWebhook": e.detail.value || "",
+    });
+  },
+
+  onClearFeishuWebhook() {
+    this.setData({
+      pendingClearFeishuWebhook: true,
+      hasFeishuWebhook: false,
+      feishuWebhookMasked: "",
+      "form.feishuWebhook": "",
+    });
+  },
+
   buildSavePayload() {
     const payload = {
       dailyEnabled: Boolean(this.data.form.dailyEnabled),
@@ -157,6 +191,14 @@ Page({
     const sendKey = String(this.data.form.sendKey || "").trim();
     if (sendKey) {
       payload.sendKey = sendKey;
+    } else if (this.data.pendingClearSendKey) {
+      payload.sendKey = "";
+    }
+    const feishuWebhook = String(this.data.form.feishuWebhook || "").trim();
+    if (feishuWebhook) {
+      payload.feishuWebhook = feishuWebhook;
+    } else if (this.data.pendingClearFeishuWebhook) {
+      payload.feishuWebhook = "";
     }
     return payload;
   },

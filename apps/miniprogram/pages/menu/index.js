@@ -70,12 +70,16 @@ Page({
     });
   },
 
-  onMenuFeatureTap(e) {
-    const { feature = "功能" } = e.currentTarget.dataset;
-    this.showPageToast({
-      text: `${feature}开发中`,
-      type: "info",
-      key: `menu_feature:${feature}`,
+  onOpenStats() {
+    wx.navigateTo({
+      url: "/pages/stats/index",
+      fail: () => {
+        this.showPageToast({
+          text: "统计报表打开失败",
+          type: "error",
+          key: "menu_stats_open_error",
+        });
+      },
     });
   },
 });

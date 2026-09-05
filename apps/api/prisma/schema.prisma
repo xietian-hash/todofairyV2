@@ -112,6 +112,7 @@ model Todo {
   parentTaskId String  @map("parent_task_id") @db.VarChar(64)
   parentTodoId String? @map("parent_todo_id") @db.VarChar(64)
   isSubTodo    Boolean @default(false) @map("is_sub_todo")
+  sourceSubTaskId String @default("") @map("source_sub_task_id") @db.VarChar(64)
   subTaskIndex Int     @default(0) @map("sub_task_index")
   subTaskTitle String  @default("") @map("sub_task_title") @db.VarChar(128)
   taskVersion  Int     @default(1) @map("task_version")
@@ -136,6 +137,7 @@ model Todo {
   @@index([userId, todoDate, status], map: "todo_user_id_todo_date_status")
   @@index([userId, parentTaskId], map: "todo_user_id_parent_task_id")
   @@index([userId, parentTodoId], map: "todo_user_id_parent_todo_id")
+  @@index([userId, parentTodoId, sourceSubTaskId], map: "todo_user_id_parent_todo_id_source_sub_task_id")
   @@map("todo")
 }
 

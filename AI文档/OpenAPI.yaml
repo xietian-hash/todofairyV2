@@ -92,6 +92,7 @@ paths:
     post:
       tags: [Tasks]
       summary: 创建任务
+      description: 开启子任务时，subTasks 每项包含 subTaskId（稳定标识）与 title（标题）；数组顺序即子任务展示顺序。
       security:
         - bearerAuth: []
       responses:
@@ -123,6 +124,7 @@ paths:
     put:
       tags: [Tasks]
       summary: 更新任务
+      description: 调整 subTasks 数组顺序即可排序。subTaskId 必须随原子任务保留，系统据此保持已完成子待办的正确归属。
       security:
         - bearerAuth: []
       parameters:

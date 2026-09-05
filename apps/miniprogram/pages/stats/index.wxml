@@ -1,7 +1,7 @@
 <view class="page" style="padding-top: {{statusBarHeight + navBarHeight}}px">
   <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
     <view class="custom-nav-bar" style="height: {{navBarHeight}}px">
-      <view class="nav-back" bindtap="onBack">&#8249;</view>
+      <view class="nav-back" bindtap="onBack">‹</view>
       <text class="nav-title">统计报表</text>
     </view>
   </view>

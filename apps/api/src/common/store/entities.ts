@@ -17,6 +17,7 @@ export type RepeatRule = {
 };
 
 export type SubTaskItem = {
+  subTaskId: string;
   title: string;
 };
 
@@ -47,6 +48,7 @@ export type TodoEntity = {
   parentTaskId: string;
   parentTodoId: string | null;
   isSubTodo: boolean;
+  sourceSubTaskId: string;
   subTaskIndex: number;
   subTaskTitle: string;
   taskVersion: number;

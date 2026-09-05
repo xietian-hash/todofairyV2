@@ -31,7 +31,7 @@ export function parseSubTasks(value: Prisma.JsonValue): SubTaskItem[] {
     return [];
   }
   return value
-    .map((item) => {
+    .map((item, index) => {
       if (!item || typeof item !== "object") {
         return null;
       }
@@ -39,7 +39,8 @@ export function parseSubTasks(value: Prisma.JsonValue): SubTaskItem[] {
       if (!title) {
         return null;
       }
-      return { title };
+      const subTaskId = String((item as { subTaskId?: unknown }).subTaskId || `legacy-${index + 1}`).trim();
+      return { subTaskId, title };
     })
     .filter(Boolean) as SubTaskItem[];
 }
@@ -74,6 +75,7 @@ export function toTodoResponse(todo: Todo) {
     parentTaskId: todo.parentTaskId,
     parentTodoId: todo.parentTodoId,
     isSubTodo: todo.isSubTodo,
+    sourceSubTaskId: todo.sourceSubTaskId,
     subTaskIndex: todo.subTaskIndex,
     subTaskTitle: todo.subTaskTitle,
     taskVersion: todo.taskVersion,

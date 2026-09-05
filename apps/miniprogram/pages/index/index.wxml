@@ -56,12 +56,15 @@
             <view class="todo-delete-btn" data-todo-id="{{item._id}}" bindtap="onDeleteTodo">删除</view>
           </view>
           <view
-            class="todo-swipe-content {{movingTodoId===item._id ? 'moving' : ''}}"
+            id="todo-swipe-{{item._id}}"
+            class="todo-swipe-content {{movingTodoId===item._id ? 'moving' : ''}} {{subTodoTitleTooltipTodoId===item._id ? 'tooltip-open' : ''}}"
             data-todo-id="{{item._id}}"
+            data-is-sub-todo="{{item.isSubTodo}}"
             bindtouchstart="onTodoTouchStart"
             bindtouchmove="onTodoTouchMove"
             bindtouchend="onTodoTouchEnd"
             bindtouchcancel="onTodoTouchCancel"
+            bindlongpress="onSubTodoTitleLongPress"
             bindtap="onTodoCardTap"
             style="transform: translateX({{movingTodoId===item._id ? movingOffset : (openedTodoId===item._id ? (0 - todoSwipeDeleteWidthPx) : 0)}}px);"
           >
@@ -94,6 +97,9 @@
                   </view>
                 </view>
               </view>
+            </view>
+            <view wx:if="{{subTodoTitleTooltipTodoId===item._id}}" class="todo-title-tooltip {{subTodoTitleTooltipBelow ? 'below' : ''}}">
+              <text>{{item.title}}</text>
             </view>
           </view>
         </view>
@@ -232,8 +238,17 @@
             <text class="sub-task-switch {{taskForm.subTaskEnabled ? '' : 'active'}}" bindtap="onToggleTaskSubTaskEnabled">{{taskForm.subTaskEnabled ? "关闭" : "开启"}}</text>
           </view>
           <view wx:if="{{taskForm.subTaskEnabled}}" class="sub-task-editor">
-            <block wx:for="{{taskForm.subTasks}}" wx:key="index">
-              <view id="task-sub-task-{{index}}" class="sub-task-row">
+            <block wx:for="{{taskForm.subTasks}}" wx:key="subTaskId">
+              <view id="task-sub-task-{{index}}" class="sub-task-row {{taskSubTaskDraggingIndex===index ? 'dragging' : ''}}">
+                <view
+                  class="sub-task-drag-handle"
+                  data-index="{{index}}"
+                  bindtouchstart="onTaskSubTaskDragTouchStart"
+                  bindlongpress="onTaskSubTaskDragStart"
+                  catchtouchmove="onTaskSubTaskDragMove"
+                  bindtouchend="onTaskSubTaskDragEnd"
+                  bindtouchcancel="onTaskSubTaskDragEnd"
+                >☰</view>
                 <input
                   class="input sub-task-input"
                   placeholder="请输入子任务标题"
@@ -321,6 +336,14 @@
         <button class="ghost-btn" bindtap="onCloseTaskModal">取消</button>
         <button class="primary-btn" loading="{{taskModalSaving}}" bindtap="onSaveTask">保存</button>
       </view>
+    </view>
+    <view
+      wx:if="{{taskSubTaskDragActive}}"
+      class="sub-task-drag-float"
+      style="top: {{taskSubTaskDragTop}}px; left: {{taskSubTaskDragLeft}}px; width: {{taskSubTaskDragWidth}}px;"
+    >
+      <text class="sub-task-drag-float-handle">☰</text>
+      <text class="sub-task-drag-float-title">{{taskSubTaskDragTitle}}</text>
     </view>
   </view>
 

@@ -1,6 +1,7 @@
 import { AppException } from "../exceptions/app.exception";
 import { ERROR_CODES } from "../constants/error-codes";
 import { RepeatRule, SubTaskItem, TaskEntity, TodoEntity } from "../store/entities";
+import { randomUUID } from "crypto";
 
 const TZ_OFFSET_MS = 8 * 60 * 60 * 1000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -197,6 +198,7 @@ export function normalizeSubTasks(rawSubTasks: unknown, enabled: boolean, strict
   const normalized = rawSubTasks
     .map((item) => {
       const title = String((typeof item === "string" ? item : (item as { title?: string })?.title) || "").trim();
+      const rawSubTaskId = typeof item === "string" ? "" : String((item as { subTaskId?: unknown })?.subTaskId || "").trim();
       if (!title) {
         if (strict) {
           throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "请输入子任务标题");
@@ -209,17 +211,26 @@ export function normalizeSubTasks(rawSubTasks: unknown, enabled: boolean, strict
         }
         return null;
       }
-      return { title };
+      if (rawSubTaskId && !/^[A-Za-z0-9_-]{1,64}$/.test(rawSubTaskId)) {
+        if (strict) {
+          throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "子任务标识不合法");
+        }
+        return null;
+      }
+      return { subTaskId: rawSubTaskId || randomUUID().replace(/-/g, "").slice(0, 20), title };
     })
     .filter(Boolean) as SubTaskItem[];
   if (strict && normalized.length < 1) {
     throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "请至少保留1个子任务");
   }
+  if (new Set(normalized.map((item) => item.subTaskId)).size !== normalized.length) {
+    throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "子任务标识重复");
+  }
   return normalized;
 }
 
-export function buildSubTodoTaskId(parentTaskId: string, subTaskIndex: number) {
-  return `${parentTaskId}::sub::${subTaskIndex}`;
+export function buildSubTodoTaskId(parentTaskId: string, subTaskId: string) {
+  return `${parentTaskId}::sub::${subTaskId}`;
 }
 
 export function isOneTimeTask(task: Pick<TaskEntity, "repeatRule">) {

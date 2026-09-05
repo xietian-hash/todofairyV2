@@ -277,6 +277,33 @@
   transition: none;
 }
 
+.todo-swipe-content.tooltip-open {
+  z-index: 3;
+}
+
+.todo-title-tooltip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10rpx);
+  z-index: 4;
+  padding: 14rpx 18rpx;
+  border-radius: 14rpx;
+  box-sizing: border-box;
+  color: #ffffff;
+  font-size: 26rpx;
+  line-height: 1.45;
+  word-break: break-all;
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.22);
+  pointer-events: none;
+}
+
+.todo-title-tooltip.below {
+  top: calc(100% + 10rpx);
+  bottom: auto;
+}
+
 .todo-card {
   padding: 20rpx;
   padding-left: 24rpx;
@@ -941,6 +968,66 @@
   display: flex;
   align-items: center;
   gap: 12rpx;
+  border-radius: 16rpx;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.sub-task-row.dragging {
+  position: relative;
+  opacity: 0.34;
+  background: #e0f2fe;
+}
+
+.sub-task-drag-handle {
+  flex: 0 0 48rpx;
+  width: 48rpx;
+  height: 72rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 34rpx;
+  line-height: 1;
+  touch-action: none;
+}
+
+.sub-task-row.dragging .sub-task-drag-handle {
+  color: #0369a1;
+}
+
+.sub-task-drag-float {
+  position: fixed;
+  z-index: 10030;
+  min-height: 72rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  color: #1e293b;
+  background: #ffffff;
+  box-shadow: 0 14rpx 30rpx rgba(3, 105, 161, 0.28);
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.sub-task-drag-float-handle {
+  flex: 0 0 48rpx;
+  width: 48rpx;
+  text-align: center;
+  color: #0369a1;
+  font-size: 34rpx;
+}
+
+.sub-task-drag-float-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sub-task-input {

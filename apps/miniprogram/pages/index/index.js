@@ -47,6 +47,8 @@ const SUB_TASK_TITLE_MAX_LEN = 64;
 const SUB_TASK_AI_TIMEOUT_MS = 30000;
 const SUB_TASK_AI_LOADING_TEXT = "AI\u601d\u8003\u4e2d";
 const SUB_TASK_AI_EMPTY_TEXT = "AI\u6ca1\u6709\u5efa\u8bae\u5462";
+const SUB_TASK_DRAG_THRESHOLD_PX = 32;
+const SUB_TASK_DRAG_FLOAT_OFFSET_PX = 20;
 const DATE_WEEKDAY_LABELS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
 function formatDateWithWeekday(dateStr) {
@@ -61,8 +63,13 @@ function formatDateWithWeekday(dateStr) {
 
 function defaultSubTaskItem() {
   return {
+    subTaskId: createSubTaskId(),
     title: "",
   };
+}
+
+function createSubTaskId() {
+  return `subtask_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function normalizeSubTaskItems(items = []) {
@@ -73,6 +80,7 @@ function normalizeSubTaskItems(items = []) {
     .map((item) => {
       const rawTitle = typeof item === "string" ? item : item && item.title;
       return {
+        subTaskId: String((item && item.subTaskId) || createSubTaskId()),
         title: String(rawTitle || "").trim(),
       };
     })
@@ -473,6 +481,12 @@ Page({
     taskQuickTagSaving: false,
     taskQuickTagFocus: false,
     taskSubTaskAiLoading: false,
+    taskSubTaskDraggingIndex: -1,
+    taskSubTaskDragActive: false,
+    taskSubTaskDragTop: 0,
+    taskSubTaskDragLeft: 0,
+    taskSubTaskDragWidth: 0,
+    taskSubTaskDragTitle: "",
     taskStatsModalVisible: false,
     taskStatsLoading: false,
     taskStatsError: "",
@@ -498,6 +512,8 @@ Page({
     openedTodoId: "",
     movingTodoId: "",
     movingOffset: 0,
+    subTodoTitleTooltipTodoId: "",
+    subTodoTitleTooltipBelow: false,
     openedTaskId: "",
     movingTaskId: "",
     movingTaskOffset: 0,
@@ -562,6 +578,7 @@ Page({
     this._viewSwitchGesture = null;
     this._taskTapGuard = null;
     this._subTaskAiRequestSeq = 0;
+    this._subTaskDrag = null;
     this._todoStatusPendingMap = null;
     if (this._todoStatusRefreshTimer) {
       clearTimeout(this._todoStatusRefreshTimer);
@@ -933,6 +950,7 @@ Page({
     if (!todoId || !touch) {
       return;
     }
+    this.hideSubTodoTitleTooltip();
 
     const { openedTodoId, todoSwipeDeleteWidthPx } = this.data;
     if (openedTodoId && openedTodoId !== todoId) {
@@ -958,6 +976,7 @@ Page({
     if (!touch) {
       return;
     }
+    this.hideSubTodoTitleTooltipWhenPointerLeaves(touch);
 
     const deltaX = touch.clientX - gesture.startX;
     const deltaY = touch.clientY - gesture.startY;
@@ -997,6 +1016,7 @@ Page({
       return;
     }
     this._todoSwipeGesture = null;
+    this.hideSubTodoTitleTooltip();
 
     if (gesture.lockDirection === "vertical") {
       this.setData({
@@ -1019,9 +1039,65 @@ Page({
     this.onTodoTouchEnd();
   },
 
+  onSubTodoTitleLongPress(e) {
+    const { todoId, isSubTodo } = e.currentTarget.dataset;
+    if (!todoId || !isSubTodo) {
+      return;
+    }
+    const requestSeq = (Number(this._subTodoTitleTooltipRequestSeq) || 0) + 1;
+    this._subTodoTitleTooltipRequestSeq = requestSeq;
+    this._todoLongPressTodoId = todoId;
+    if (this._todoLongPressGuardTimer) {
+      clearTimeout(this._todoLongPressGuardTimer);
+    }
+    this._todoLongPressGuardTimer = setTimeout(() => {
+      this._todoLongPressGuardTimer = null;
+      this._todoLongPressTodoId = "";
+    }, 350);
+    wx.createSelectorQuery()
+      .select(`#todo-swipe-${todoId}`)
+      .boundingClientRect((rect) => {
+        if (!rect || requestSeq !== this._subTodoTitleTooltipRequestSeq) {
+          return;
+        }
+        this._subTodoTitleTooltipRect = rect;
+        this.setData({
+          subTodoTitleTooltipTodoId: todoId,
+          subTodoTitleTooltipBelow: Number(rect.top) < 72,
+        });
+      })
+      .exec();
+  },
+
+  hideSubTodoTitleTooltipWhenPointerLeaves(touch) {
+    const rect = this._subTodoTitleTooltipRect;
+    if (!this.data.subTodoTitleTooltipTodoId || !rect) {
+      return;
+    }
+    const isInside = touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+    if (!isInside) {
+      this.hideSubTodoTitleTooltip();
+    }
+  },
+
+  hideSubTodoTitleTooltip() {
+    this._subTodoTitleTooltipRequestSeq = (Number(this._subTodoTitleTooltipRequestSeq) || 0) + 1;
+    this._subTodoTitleTooltipRect = null;
+    if (this.data.subTodoTitleTooltipTodoId) {
+      this.setData({
+        subTodoTitleTooltipTodoId: "",
+        subTodoTitleTooltipBelow: false,
+      });
+    }
+  },
+
   onTodoCardTap(e) {
     const { todoId } = e.currentTarget.dataset;
     if (!todoId) {
+      return;
+    }
+    if (this._todoLongPressTodoId === todoId) {
+      this._todoLongPressTodoId = "";
       return;
     }
     if (this.data.openedTodoId && this.data.openedTodoId === todoId) {
@@ -1770,6 +1846,7 @@ Page({
     if (!this.data.taskModalVisible || this.data.taskModalClosing) {
       return;
     }
+    this._subTaskDrag = null;
     const closeAnimation = wx.createAnimation({
       duration: TASK_MODAL_ANIM_DURATION,
       timingFunction: "ease-in",
@@ -1779,6 +1856,9 @@ Page({
     this.setData({
       taskModalClosing: true,
       taskModalAnimation: closeAnimation.export(),
+      taskSubTaskDraggingIndex: -1,
+      taskSubTaskDragActive: false,
+      taskSubTaskDragTitle: "",
       modalKeyboardHeight: 0,
       modalScrollIntoView: "",
     });
@@ -1936,6 +2016,80 @@ Page({
     this.setData({
       "taskForm.subTasks": subTasks,
     });
+  },
+
+  onTaskSubTaskDragStart(e) {
+    if (this.data.taskSubTaskAiLoading) {
+      return;
+    }
+    const index = Number(e.currentTarget.dataset.index);
+    const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    if (!Number.isInteger(index) || index < 0 || !touch) {
+      return;
+    }
+    const subTasks = Array.isArray(this.data.taskForm.subTasks) ? this.data.taskForm.subTasks : [];
+    const current = subTasks[index];
+    if (!current) {
+      return;
+    }
+    const windowWidth = Number(wx.getSystemInfoSync().windowWidth) || 375;
+    const horizontalInset = 15;
+    this._subTaskDrag = { index, lastY: touch.clientY, active: true };
+    this.setData({
+      taskSubTaskDraggingIndex: index,
+      taskSubTaskDragActive: true,
+      taskSubTaskDragTop: Math.max(0, touch.clientY - SUB_TASK_DRAG_FLOAT_OFFSET_PX),
+      taskSubTaskDragLeft: horizontalInset,
+      taskSubTaskDragWidth: Math.max(0, windowWidth - horizontalInset * 2),
+      taskSubTaskDragTitle: current.title,
+    });
+    wx.vibrateShort({ type: "light", fail: () => {} });
+  },
+
+  onTaskSubTaskDragTouchStart(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    if (!Number.isInteger(index) || index < 0 || !touch) {
+      return;
+    }
+    this._subTaskDrag = { index, lastY: touch.clientY, active: false };
+  },
+
+  onTaskSubTaskDragMove(e) {
+    const drag = this._subTaskDrag;
+    const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    if (!drag || !drag.active || !touch) {
+      return;
+    }
+    const offset = touch.clientY - drag.lastY;
+    this.setData({ taskSubTaskDragTop: Math.max(0, touch.clientY - SUB_TASK_DRAG_FLOAT_OFFSET_PX) });
+    if (Math.abs(offset) < SUB_TASK_DRAG_THRESHOLD_PX) {
+      return;
+    }
+    const subTasks = Array.isArray(this.data.taskForm.subTasks) ? this.data.taskForm.subTasks.map((item) => ({ ...item })) : [];
+    const nextIndex = Math.max(0, Math.min(subTasks.length - 1, drag.index + (offset > 0 ? 1 : -1)));
+    if (nextIndex === drag.index) {
+      return;
+    }
+    const [moved] = subTasks.splice(drag.index, 1);
+    subTasks.splice(nextIndex, 0, moved);
+    this._subTaskDrag = { index: nextIndex, lastY: touch.clientY, active: true };
+    this.setData({
+      "taskForm.subTasks": subTasks,
+      taskSubTaskDraggingIndex: nextIndex,
+      taskSubTaskDragTitle: moved.title,
+    });
+  },
+
+  onTaskSubTaskDragEnd() {
+    this._subTaskDrag = null;
+    if (this.data.taskSubTaskDraggingIndex !== -1 || this.data.taskSubTaskDragActive) {
+      this.setData({
+        taskSubTaskDraggingIndex: -1,
+        taskSubTaskDragActive: false,
+        taskSubTaskDragTitle: "",
+      });
+    }
   },
 
   onAddTaskSubTask() {
@@ -2281,6 +2435,7 @@ Page({
 
     const rawSubTasks = Array.isArray(taskForm.subTasks)
       ? taskForm.subTasks.map((item) => ({
+          subTaskId: String((item && item.subTaskId) || createSubTaskId()),
           title: String((item && item.title) || "").trim(),
         }))
       : [];
@@ -2327,6 +2482,7 @@ Page({
       tagName: taskForm.tagName || null,
       subTaskEnabled: Boolean(taskForm.subTaskEnabled && normalizedSubTasks.length > 0),
       subTasks: normalizedSubTasks.map((item) => ({
+        subTaskId: item.subTaskId,
         title: item.title,
       })),
       ...(isOneTime

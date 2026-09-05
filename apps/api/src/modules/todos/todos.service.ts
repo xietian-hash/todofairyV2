@@ -128,6 +128,7 @@ export class TodosService {
         parentTaskId: task.id,
         parentTodoId: null,
         isSubTodo: false,
+        sourceSubTaskId: "",
         subTaskIndex: 0,
         subTaskTitle: "",
         taskVersion: task.version,
@@ -459,6 +460,9 @@ export class TodosService {
       },
     });
     const existingByIndex = new Map(existing.map((item) => [Number(item.subTaskIndex), item] as const));
+    const existingBySubTaskId = new Map(
+      existing.filter((item) => item.sourceSubTaskId).map((item) => [item.sourceSubTaskId, item] as const)
+    );
     const now = getNowMs();
 
     if (!task.subTaskEnabled || normalizedSubTasks.length === 0) {
@@ -479,8 +483,18 @@ export class TodosService {
 
     for (const [index, item] of normalizedSubTasks.entries()) {
       const subTaskIndex = index + 1;
-      const current = existingByIndex.get(subTaskIndex);
+      const legacyIndex = /^legacy-(\d+)$/.exec(item.subTaskId);
+      const current = existingBySubTaskId.get(item.subTaskId) || (legacyIndex ? existingByIndex.get(Number(legacyIndex[1])) : undefined);
       if (current) {
+        await tx.todo.update({
+          where: { id: current.id },
+          data: {
+            taskId: buildSubTodoTaskId(task.id, item.subTaskId),
+            sourceSubTaskId: item.subTaskId,
+            subTaskIndex,
+            updatedAt: BigInt(now),
+          },
+        });
         if (Number(current.status) === 1) {
           await tx.todo.update({
             where: { id: current.id },
@@ -494,16 +508,18 @@ export class TodosService {
             },
           });
         }
-        existingByIndex.delete(subTaskIndex);
+        existingByIndex.delete(Number(current.subTaskIndex));
+        existingBySubTaskId.delete(item.subTaskId);
         continue;
       }
       await tx.todo.create({
         data: {
           userId: task.userId,
-          taskId: buildSubTodoTaskId(task.id, subTaskIndex),
+          taskId: buildSubTodoTaskId(task.id, item.subTaskId),
           parentTaskId: task.id,
           parentTodoId: parentTodo.id,
           isSubTodo: true,
+          sourceSubTaskId: item.subTaskId,
           subTaskIndex,
           subTaskTitle: item.title,
           taskVersion: task.version,

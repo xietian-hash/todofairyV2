@@ -30,3 +30,5 @@ package-lock.json
 *.pem
 deploy-bundle.tar.gz
 .claude/
+__pycache__/
+*.py[cod]

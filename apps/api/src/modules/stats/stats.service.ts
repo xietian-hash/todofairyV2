@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
+import { classifyTodos, countsTowardProgress } from "../../common/database/todo-classification";
 import { compareDateStr, currentWeekRange, monthStartEnd, offsetDateStr, todayStr } from "../../common/utils/domain-utils";
 
 @Injectable()
@@ -18,7 +19,7 @@ export class StatsService {
         isSubTodo: false,
         todoDate: { gte: monthRange.start, lte: monthRange.end },
       },
-      select: { todoDate: true, status: true, tagId: true, tagName: true },
+      select: { userId: true, parentTaskId: true, todoDate: true, status: true, tagId: true, tagName: true },
     });
 
     const todayStats = { total: 0, completed: 0 };
@@ -26,7 +27,7 @@ export class StatsService {
     const monthStats = { total: 0, completed: 0 };
     const tagMap = new Map<string, { tagName: string; total: number; completed: number }>();
 
-    for (const todo of todos) {
+    for (const todo of (await classifyTodos(this.prisma, todos)).filter(countsTowardProgress)) {
       const done = Number(todo.status) === 2;
 
       monthStats.total += 1;
@@ -80,11 +81,11 @@ export class StatsService {
         isSubTodo: false,
         todoDate: { gte: startDate, lte: today },
       },
-      select: { todoDate: true, status: true },
+      select: { userId: true, parentTaskId: true, todoDate: true, status: true },
     });
 
     const byDate = new Map<string, { total: number; completed: number }>();
-    for (const todo of todos) {
+    for (const todo of (await classifyTodos(this.prisma, todos)).filter(countsTowardProgress)) {
       const key = todo.todoDate;
       if (!byDate.has(key)) byDate.set(key, { total: 0, completed: 0 });
       const entry = byDate.get(key)!;
@@ -127,11 +128,11 @@ export class StatsService {
         isSubTodo: false,
         todoDate: { gte: firstTodo.todoDate, lte: today },
       },
-      select: { todoDate: true, status: true },
+      select: { userId: true, parentTaskId: true, todoDate: true, status: true },
     });
 
     const byDate = new Map<string, { total: number; completed: number }>();
-    for (const todo of todos) {
+    for (const todo of (await classifyTodos(this.prisma, todos)).filter(countsTowardProgress)) {
       const key = todo.todoDate;
       if (!byDate.has(key)) byDate.set(key, { total: 0, completed: 0 });
       const entry = byDate.get(key)!;

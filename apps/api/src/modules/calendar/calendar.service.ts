@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
+import { classifyTodos, countsTowardProgress } from "../../common/database/todo-classification";
 import { assertMonth, compareDateStr, listMonthDates, monthStartEnd, resolveCalendarStatus, todayStr } from "../../common/utils/domain-utils";
 
 @Injectable()
@@ -24,7 +25,7 @@ export class CalendarService {
     for (const date of listMonthDates(month)) {
       map.set(date, { total: 0, completedCount: 0, uncompletedCount: 0 });
     }
-    todos.forEach((todo) => {
+    (await classifyTodos(this.prisma, todos)).filter(countsTowardProgress).forEach((todo) => {
       const target = map.get(todo.todoDate);
       if (!target) {
         return;

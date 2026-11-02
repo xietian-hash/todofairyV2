@@ -18,6 +18,7 @@ import {
 } from "../../common/utils/domain-utils";
 import { TagsService } from "../tags/tags.service";
 import { TodosService } from "../todos/todos.service";
+import { classifyTodos } from "../../common/database/todo-classification";
 
 @Injectable()
 export class TasksService {
@@ -109,7 +110,7 @@ export class TasksService {
     return {
       taskId: task.id,
       title: task.title,
-      ...buildTaskStats(todos.map(toTodoResponse), todayStr()),
+      ...buildTaskStats((await classifyTodos(this.prisma, todos)).map(toTodoResponse), todayStr()),
     };
   }
 

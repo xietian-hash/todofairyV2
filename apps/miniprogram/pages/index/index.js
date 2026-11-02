@@ -331,7 +331,7 @@ function decorateTodoListWithTagColors(todoList = [], tagOptions = []) {
 function summarizeTodoProgress(todoList = []) {
   return (todoList || []).reduce(
     (summary, item) => {
-      if (!item || item.isSubTodo) {
+      if (!item || item.isSubTodo || (item.isOneTime && Number(item.status) !== 2)) {
         return summary;
       }
       if (Number(item.status) === 2) {
@@ -394,7 +394,7 @@ function applyTodoStatusSnapshot(todo = {}, nextStatus, now, today) {
     };
   }
 
-  const shouldExpired = Boolean(todo.todoDate && today && todo.todoDate < today);
+  const shouldExpired = Boolean(!todo.isOneTime && todo.todoDate && today && todo.todoDate < today);
   return {
     ...todo,
     status: 1,

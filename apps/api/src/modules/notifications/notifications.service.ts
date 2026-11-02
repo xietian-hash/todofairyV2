@@ -4,7 +4,8 @@ import { Injectable } from "@nestjs/common";
 import { AppException } from "../../common/exceptions/app.exception";
 import { ERROR_CODES } from "../../common/constants/error-codes";
 import { PrismaService } from "../../common/database/prisma.service";
-import { toNotificationSettingsResponse } from "../../common/database/prisma-helpers";
+import { toNotificationSettingsResponse, toTodoResponse } from "../../common/database/prisma-helpers";
+import { classifyTodos } from "../../common/database/todo-classification";
 import {
   buildDailySummaryText,
   buildWeeklySummaryText,
@@ -452,12 +453,7 @@ export class NotificationsService {
     });
     return finalizeSummary({
       date,
-      ...summarizeParentTodoStatuses(todos.map((item) => ({
-        ...item,
-        completedAt: Number(item.completedAt) || null,
-        expiredAt: Number(item.expiredAt) || null,
-        deletedAt: Number(item.deletedAt) || null,
-      })) as never),
+      ...summarizeParentTodoStatuses((await classifyTodos(this.prisma, todos)).map(toTodoResponse)),
     });
   }
 
@@ -473,12 +469,7 @@ export class NotificationsService {
     return finalizeSummary({
       startDate: range.start,
       endDate: range.end,
-      ...summarizeParentTodoStatuses(todos.map((item) => ({
-        ...item,
-        completedAt: Number(item.completedAt) || null,
-        expiredAt: Number(item.expiredAt) || null,
-        deletedAt: Number(item.deletedAt) || null,
-      })) as never),
+      ...summarizeParentTodoStatuses((await classifyTodos(this.prisma, todos)).map(toTodoResponse)),
     });
   }
 

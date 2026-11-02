@@ -1,0 +1,10 @@
+[Unit]
+Description=每天北京时间凌晨四点半检查 Docker 构建缓存
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 Asia/Shanghai
+Persistent=true
+Unit=docker-cache-maintenance.service
+
+[Install]
+WantedBy=timers.target

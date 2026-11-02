@@ -240,7 +240,7 @@ export function isOneTimeTask(task: Pick<TaskEntity, "repeatRule">) {
 export function summarizeParentTodoStatuses(todos: TodoEntity[]) {
   return todos.reduce(
     (summary, todo) => {
-      if (todo.isSubTodo || todo.isDeleted) {
+      if (todo.isSubTodo || todo.isDeleted || (todo.isOneTime && Number(todo.status) !== 2)) {
         return summary;
       }
       summary.total += 1;
@@ -275,7 +275,7 @@ export function buildTaskStats(todoList: TodoEntity[], referenceDate = todayStr(
   const weekRange = currentWeekRange(referenceDate);
 
   for (const todo of todoList) {
-    if (todo.isSubTodo || todo.isDeleted) {
+    if (todo.isSubTodo || todo.isDeleted || (todo.isOneTime && Number(todo.status) !== 2)) {
       continue;
     }
     const targets = [all];

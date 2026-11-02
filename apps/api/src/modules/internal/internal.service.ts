@@ -23,7 +23,7 @@ export class InternalService {
     this.logger.log("cron_0000: 开始日切");
     try {
       const result = await this.dailyRollover("cron_0000");
-      this.logger.log(`cron_0000: 完成，生成待办 ${result.todoGenerated} 条，过期标记 ${result.expiredMarked} 条`);
+      this.logger.log(`cron_0000: 完成，顺延待办 ${result.oneTimeDeferred} 条，生成待办 ${result.todoGenerated} 条，过期标记 ${result.expiredMarked} 条`);
     } catch (err) {
       this.logger.error("cron_0000: 日切失败", err instanceof Error ? err.stack : String(err));
     }
@@ -31,6 +31,7 @@ export class InternalService {
 
   async dailyRollover(traceId = "") {
     const today = todayStr();
+    const oneTimeDeferred = await this.todosService.deferUncompletedOneTimeTodos(today);
     const expiredMarked = await this.todosService.markExpiredBeforeDate(today);
     const tasks = await this.tasksService.getActiveTasksForDate(today);
     let todoGenerated = 0;
@@ -44,6 +45,7 @@ export class InternalService {
       }
     }
     return {
+      oneTimeDeferred,
       todoGenerated,
       expiredMarked,
     };

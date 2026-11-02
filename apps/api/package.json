@@ -3,6 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
+    "test": "pnpm run build && node --test test/*.test.cjs",
     "start:dev": "nest start --watch",
     "build": "nest build",
     "start:prod": "node dist/main.js",

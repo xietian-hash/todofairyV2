@@ -67,7 +67,7 @@ export function toTaskResponse(task: Task) {
   };
 }
 
-export function toTodoResponse(todo: Todo) {
+export function toTodoResponse(todo: Todo & { isOneTime?: boolean }) {
   return {
     _id: todo.id,
     userId: todo.userId,
@@ -81,13 +81,14 @@ export function toTodoResponse(todo: Todo) {
     taskVersion: todo.taskVersion,
     todoDate: todo.todoDate,
     triggerType: todo.triggerType,
+    isOneTime: todo.isOneTime === true,
     title: todo.title,
     remark: todo.remark,
     tagId: todo.tagId,
     tagName: todo.tagName || null,
     completedAt: Number(todo.completedAt) || null,
     status: todo.status,
-    isExpired: todo.isExpired,
+    isExpired: todo.isOneTime ? false : todo.isExpired,
     expiredAt: Number(todo.expiredAt) || null,
     isDeleted: todo.isDeleted,
     createdAt: Number(todo.createdAt),

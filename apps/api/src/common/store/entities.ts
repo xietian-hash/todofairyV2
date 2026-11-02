@@ -42,6 +42,7 @@ export type TaskEntity = {
 };
 
 export type TodoEntity = {
+  isOneTime?: boolean;
   _id: string;
   userId: string;
   taskId: string;

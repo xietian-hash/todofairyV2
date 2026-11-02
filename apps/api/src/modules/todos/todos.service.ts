@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Prisma, Task, Todo } from "@prisma/client";
 import { AppException } from "../../common/exceptions/app.exception";
 import { ERROR_CODES } from "../../common/constants/error-codes";
@@ -17,6 +17,7 @@ import {
   todayStr,
 } from "../../common/utils/domain-utils";
 import { TagsService } from "../tags/tags.service";
+import { classifyTodos } from "../../common/database/todo-classification";
 
 function sortTodosByTag(todos: ReturnType<typeof toTodoResponse>[]) {
   return [...todos].sort((a, b) => {
@@ -74,6 +75,7 @@ type DbClient = Prisma.TransactionClient | PrismaService;
 
 @Injectable()
 export class TodosService {
+  private readonly logger = new Logger(TodosService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly tagsService: TagsService
@@ -115,7 +117,7 @@ export class TodosService {
       });
       return {
         created: false,
-        todo: toTodoResponse(existed),
+        todo: toTodoResponse({ ...existed, isOneTime: !parseRepeatRule(task.repeatRuleJson).weekdays.length }),
         reason: "already_exists",
       };
     }
@@ -160,7 +162,7 @@ export class TodosService {
     });
     return {
       created: true,
-      todo: toTodoResponse(parentTodo),
+      todo: toTodoResponse({ ...parentTodo, isOneTime: !parseRepeatRule(task.repeatRuleJson).weekdays.length }),
       reason: "created",
     };
   }
@@ -257,7 +259,7 @@ export class TodosService {
       },
       orderBy: [{ createdAt: "asc" }],
     });
-    const normalized = todos.map(toTodoResponse);
+    const normalized = (await classifyTodos(this.prisma, todos)).map(toTodoResponse);
     const sorted = sortTodosByTag(normalized);
     const list = buildHierarchicalTodos(sorted);
     const summary = summarizeParentTodoStatuses(list);
@@ -281,6 +283,10 @@ export class TodosService {
       });
       if (!todo) {
         throw new AppException(404, ERROR_CODES.NOT_FOUND, "待办不存在");
+      }
+      const [classified] = await classifyTodos(tx, [todo]);
+      if (classified.isOneTime && Number(todo.status) === nextStatus) {
+        return toTodoResponse(classified);
       }
       if (!todo.isSubTodo && nextStatus === 2) {
         const uncompletedChildren = await tx.todo.count({
@@ -309,15 +315,19 @@ export class TodosService {
             : {
                 status: 1,
                 completedAt: BigInt(0),
-                isExpired: compareDateStr(todo.todoDate, todayStr()) < 0,
-                expiredAt: compareDateStr(todo.todoDate, todayStr()) < 0 ? BigInt(Number(todo.expiredAt) || now) : todo.expiredAt,
+                isExpired: !classified.isOneTime && compareDateStr(todo.todoDate, todayStr()) < 0,
+                expiredAt: classified.isOneTime ? BigInt(0) : compareDateStr(todo.todoDate, todayStr()) < 0 ? BigInt(Number(todo.expiredAt) || now) : todo.expiredAt,
                 updatedAt: BigInt(now),
               },
       });
       if (todo.isSubTodo && todo.parentTodoId) {
         await this.syncParentTodoStatusByChildrenInDb(tx, userId, todo.parentTodoId);
       }
-      return toTodoResponse(updated);
+      if (!todo.isSubTodo && nextStatus === 2 && classified.isOneTime) {
+        await this.moveCompletedOneTimeInDb(tx, updated);
+      }
+      const saved = await tx.todo.findUniqueOrThrow({ where: { id: todo.id } });
+      return toTodoResponse({ ...saved, isOneTime: classified.isOneTime });
     });
   }
 
@@ -360,7 +370,8 @@ export class TodosService {
       }
 
       const now = getNowMs();
-      const shouldExpired = Number(todo.status) === 1 && compareDateStr(targetTodoDate, todayStr()) < 0;
+      const [classified] = await classifyTodos(tx, [todo]);
+      const shouldExpired = !classified.isOneTime && Number(todo.status) === 1 && compareDateStr(targetTodoDate, todayStr()) < 0;
       const updated = await tx.todo.update({
         where: { id: todo.id },
         data: {
@@ -390,7 +401,7 @@ export class TodosService {
         });
       }
 
-      return toTodoResponse(updated);
+      return toTodoResponse({ ...updated, isOneTime: classified.isOneTime });
     });
   }
 
@@ -429,8 +440,13 @@ export class TodosService {
 
   async markExpiredBeforeDate(date: string) {
     const now = getNowMs();
+    const candidates = await this.prisma.todo.findMany({
+      where: { isDeleted: false, status: 1, todoDate: { lt: date } },
+    });
+    const ids = (await classifyTodos(this.prisma, candidates)).filter((todo) => !todo.isOneTime).map((todo) => todo.id);
     const result = await this.prisma.todo.updateMany({
       where: {
+        id: { in: ids },
         isDeleted: false,
         status: 1,
         todoDate: { lt: date },
@@ -442,6 +458,52 @@ export class TodosService {
       },
     });
     return result.count;
+  }
+
+  async deferUncompletedOneTimeTodos(date: string) {
+    assertDate(date, "顺延日期");
+    const candidates = await this.prisma.todo.findMany({
+      where: { isDeleted: false, isSubTodo: false, status: 1, todoDate: { lt: date } },
+    });
+    const parents = (await classifyTodos(this.prisma, candidates)).filter((todo) => todo.isOneTime);
+    let count = 0;
+    for (const parent of parents) {
+      // 串行事务保证完成操作、重复日切与顺延之间不会丢失子项进度。
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          count += await this.prisma.$transaction(async (tx) => {
+            const now = BigInt(getNowMs());
+            const moved = await tx.todo.updateMany({
+              where: { id: parent.id, userId: parent.userId, isDeleted: false, status: 1, todoDate: { lt: date } },
+              data: { todoDate: date, isExpired: false, expiredAt: BigInt(0), updatedAt: now },
+            });
+            if (moved.count) {
+              await tx.todo.updateMany({
+                where: { userId: parent.userId, parentTodoId: parent.id, isDeleted: false },
+                data: { todoDate: date, isExpired: false, expiredAt: BigInt(0), updatedAt: now },
+              });
+            }
+            return moved.count;
+          }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+          break;
+        } catch (error) {
+          if (attempt >= 2 || !(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034") {
+            this.logger.error(`一次性待办顺延失败 userId=${parent.userId} todoId=${parent.id} targetDate=${date}`);
+            throw error;
+          }
+        }
+      }
+    }
+    return count;
+  }
+
+  private async moveCompletedOneTimeInDb(tx: DbClient, parent: Todo) {
+    const date = todayStr();
+    if (parent.todoDate === date) return;
+    await tx.todo.updateMany({
+      where: { userId: parent.userId, isDeleted: false, OR: [{ id: parent.id }, { parentTodoId: parent.id }] },
+      data: { todoDate: date, isExpired: false, expiredAt: BigInt(0), updatedAt: BigInt(getNowMs()) },
+    });
   }
 
   private async syncSubTodosForParentTodoInDb(
@@ -587,10 +649,13 @@ export class TodosService {
           updatedAt: BigInt(now),
         },
       });
+      const [classified] = await classifyTodos(tx, [parent]);
+      if (classified.isOneTime) await this.moveCompletedOneTimeInDb(tx, parent);
       return;
     }
     if (!allCompleted && Number(parent.status) === 2) {
-      const shouldExpired = compareDateStr(parent.todoDate, todayStr()) < 0;
+      const [classified] = await classifyTodos(tx, [parent]);
+      const shouldExpired = !classified.isOneTime && compareDateStr(parent.todoDate, todayStr()) < 0;
       await tx.todo.update({
         where: { id: parent.id },
         data: {

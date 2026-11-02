@@ -23,16 +23,68 @@ jobs:
       - name: Notify deploy start
         continue-on-error: true
         env:
-          WEBHOOK: ${{ secrets.WECHAT_ROBOT_WEBHOOK }}
+          WEBHOOK: ${{ secrets.FEISHU_ROBOT_WEBHOOK }}
+          TITLE: 任务精灵：开始部署
+          COLOR: blue
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MSG="$(printf '🚀 开始部署｜任务精灵v2\n提交：%s %s\n触发人：%s\n详情：%s' "${SHA:0:7}" "$COMMIT_MSG" "$ACTOR" "$RUN_URL")"
-          curl -s -X POST "$WEBHOOK" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          webhook = os.environ.get("WEBHOOK", "").strip()
+          if not webhook:
+              print("::warning::未配置 FEISHU_ROBOT_WEBHOOK，飞书通知未发送。")
+              sys.exit(1)
+
+          content = (
+              f"提交：{os.environ['SHA'][:7]}\n"
+              f"触发人：{os.environ['ACTOR']}\n"
+              f"详情：{os.environ['RUN_URL']}"
+          )
+          payload = {
+              "msg_type": "interactive",
+              "card": {
+                  "schema": "2.0",
+                  "header": {
+                      "title": {"tag": "plain_text", "content": os.environ["TITLE"]},
+                      "template": os.environ["COLOR"],
+                  },
+                  "body": {
+                      "elements": [
+                          {"tag": "markdown", "content": content},
+                          {
+                              "tag": "button",
+                              "text": {"tag": "plain_text", "content": "查看部署详情"},
+                              "type": "default",
+                              "behaviors": [{"type": "open_url", "default_url": os.environ["RUN_URL"]}],
+                          },
+                      ],
+                  },
+              },
+          }
+          try:
+              request = urllib.request.Request(
+                  webhook,
+                  data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                  headers={"Content-Type": "application/json; charset=utf-8"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  result = json.load(response)
+              code = result.get("code", result.get("StatusCode")) if isinstance(result, dict) else None
+              if type(code) is not int or code != 0:
+                  print(f"::warning::飞书未确认接收通知，返回码：{code if type(code) is int else '未知'}。")
+                  sys.exit(1)
+          except Exception as error:
+              print(f"::warning::飞书通知发送失败（{type(error).__name__}），请检查机器人配置和网络。")
+              sys.exit(1)
+          print("飞书已成功接收通知。")
+          PY
 
       - name: Create deploy bundle
         run: |
@@ -69,7 +121,6 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             docker compose -f ~/api-todofairyV2/docker-compose.deploy.yml stop api 2>/dev/null || true
-            docker rm -f $(docker ps -aq --filter status=exited) 2>/dev/null || true
             docker builder prune --filter until=168h -f 2>/dev/null || true
 
       - name: Deploy on server
@@ -140,26 +191,132 @@ jobs:
         if: success()
         continue-on-error: true
         env:
-          WEBHOOK: ${{ secrets.WECHAT_ROBOT_WEBHOOK }}
+          WEBHOOK: ${{ secrets.FEISHU_ROBOT_WEBHOOK }}
+          TITLE: 任务精灵：部署成功
+          COLOR: green
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MSG="$(printf '✅ 部署成功｜任务精灵v2\n提交：%s\n触发人：%s\n详情：%s' "${SHA:0:7}" "$ACTOR" "$RUN_URL")"
-          curl -s -X POST "$WEBHOOK" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          webhook = os.environ.get("WEBHOOK", "").strip()
+          if not webhook:
+              print("::warning::未配置 FEISHU_ROBOT_WEBHOOK，飞书通知未发送。")
+              sys.exit(1)
+
+          content = (
+              f"提交：{os.environ['SHA'][:7]}\n"
+              f"触发人：{os.environ['ACTOR']}\n"
+              f"详情：{os.environ['RUN_URL']}"
+          )
+          payload = {
+              "msg_type": "interactive",
+              "card": {
+                  "schema": "2.0",
+                  "header": {
+                      "title": {"tag": "plain_text", "content": os.environ["TITLE"]},
+                      "template": os.environ["COLOR"],
+                  },
+                  "body": {
+                      "elements": [
+                          {"tag": "markdown", "content": content},
+                          {
+                              "tag": "button",
+                              "text": {"tag": "plain_text", "content": "查看部署详情"},
+                              "type": "default",
+                              "behaviors": [{"type": "open_url", "default_url": os.environ["RUN_URL"]}],
+                          },
+                      ],
+                  },
+              },
+          }
+          try:
+              request = urllib.request.Request(
+                  webhook,
+                  data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                  headers={"Content-Type": "application/json; charset=utf-8"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  result = json.load(response)
+              code = result.get("code", result.get("StatusCode")) if isinstance(result, dict) else None
+              if type(code) is not int or code != 0:
+                  print(f"::warning::飞书未确认接收通知，返回码：{code if type(code) is int else '未知'}。")
+                  sys.exit(1)
+          except Exception as error:
+              print(f"::warning::飞书通知发送失败（{type(error).__name__}），请检查机器人配置和网络。")
+              sys.exit(1)
+          print("飞书已成功接收通知。")
+          PY
 
       - name: Notify deploy failure
         if: failure()
         continue-on-error: true
         env:
-          WEBHOOK: ${{ secrets.WECHAT_ROBOT_WEBHOOK }}
+          WEBHOOK: ${{ secrets.FEISHU_ROBOT_WEBHOOK }}
+          TITLE: 任务精灵：部署失败
+          COLOR: red
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MSG="$(printf '❌ 部署失败｜任务精灵v2\n提交：%s\n触发人：%s\n详情：%s' "${SHA:0:7}" "$ACTOR" "$RUN_URL")"
-          curl -s -X POST "$WEBHOOK" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$(jq -n --arg c "$MSG" '{msgtype:"text",text:{content:$c}}')"
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          webhook = os.environ.get("WEBHOOK", "").strip()
+          if not webhook:
+              print("::warning::未配置 FEISHU_ROBOT_WEBHOOK，飞书通知未发送。")
+              sys.exit(1)
+
+          content = (
+              f"提交：{os.environ['SHA'][:7]}\n"
+              f"触发人：{os.environ['ACTOR']}\n"
+              f"详情：{os.environ['RUN_URL']}"
+          )
+          payload = {
+              "msg_type": "interactive",
+              "card": {
+                  "schema": "2.0",
+                  "header": {
+                      "title": {"tag": "plain_text", "content": os.environ["TITLE"]},
+                      "template": os.environ["COLOR"],
+                  },
+                  "body": {
+                      "elements": [
+                          {"tag": "markdown", "content": content},
+                          {
+                              "tag": "button",
+                              "text": {"tag": "plain_text", "content": "查看部署详情"},
+                              "type": "default",
+                              "behaviors": [{"type": "open_url", "default_url": os.environ["RUN_URL"]}],
+                          },
+                      ],
+                  },
+              },
+          }
+          try:
+              request = urllib.request.Request(
+                  webhook,
+                  data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                  headers={"Content-Type": "application/json; charset=utf-8"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  result = json.load(response)
+              code = result.get("code", result.get("StatusCode")) if isinstance(result, dict) else None
+              if type(code) is not int or code != 0:
+                  print(f"::warning::飞书未确认接收通知，返回码：{code if type(code) is int else '未知'}。")
+                  sys.exit(1)
+          except Exception as error:
+              print(f"::warning::飞书通知发送失败（{type(error).__name__}），请检查机器人配置和网络。")
+              sys.exit(1)
+          print("飞书已成功接收通知。")
+          PY

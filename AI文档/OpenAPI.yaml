@@ -256,6 +256,7 @@ paths:
     get:
       tags: [Todos]
       summary: 查询待办列表
+      description: 列表每项新增 isOneTime（布尔值，含子待办，来源于所属任务的空重复星期；缺失关联时为 false）。未完成的一次性待办保留在 list 中，但不计入 total、uncompletedCount 和完成率；完成后计入 total、completedCount。一次性待办不标记失效。状态修改及编辑待办的返回项也包含 isOneTime。
       security:
         - bearerAuth: []
       responses:
@@ -433,6 +434,7 @@ paths:
                 $ref: '#/components/schemas/SuccessEnvelope'
   /api/v1/internal/daily-rollover:
     post:
+      description: 北京时间每日凌晨1点执行。先将早于当天且未完成的一次性父待办及其全部有效子项移至当天，再处理重复任务的过期和生成；保留原记录及子项进度。新增返回 oneTimeDeferred（顺延父待办数量），重复执行不重复顺延；失败重跑时积压记录直接移至当天。已有记录同样适用。
       tags: [Internal]
       summary: 每日日切
       responses:

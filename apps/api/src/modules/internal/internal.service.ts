@@ -51,6 +51,25 @@ export class InternalService {
     };
   }
 
+  @Cron("0 22 * * *", { timeZone: "Asia/Shanghai", waitForCompletion: true })
+  async scheduledDailySummaryNotification() {
+    await this.runScheduledSummary("日报", () => this.dailySummaryNotification());
+  }
+
+  @Cron("0 9 * * 1", { timeZone: "Asia/Shanghai", waitForCompletion: true })
+  async scheduledWeeklySummaryNotification() {
+    await this.runScheduledSummary("周报", () => this.weeklySummaryNotification());
+  }
+
+  private async runScheduledSummary(name: string, run: () => Promise<unknown>) {
+    this.logger.log(`${name}定时发送：开始`);
+    try {
+      this.logger.log(`${name}定时发送：完成 ${JSON.stringify(await run())}`);
+    } catch (err) {
+      this.logger.error(`${name}定时发送：失败`, err instanceof Error ? err.stack : String(err));
+    }
+  }
+
   async dailySummaryNotification(traceId = "") {
     return this.notificationsService.runDailySummaryNotification("cron_2200", traceId);
   }

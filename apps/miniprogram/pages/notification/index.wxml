@@ -14,7 +14,7 @@
     <view class="setting-row">
       <view class="setting-main">
         <text class="setting-label">每日 {{dailySummaryTime}} 日报</text>
-        <text class="setting-desc">推送当天任务完成情况，正文优先由 AI 生成。</text>
+        <text class="setting-desc">通过飞书卡片推送当天任务完成情况。</text>
       </view>
       <switch checked="{{form.dailyEnabled}}" bindchange="onToggleDailyEnabled" color="#21bfff"></switch>
     </view>
@@ -22,26 +22,9 @@
     <view class="setting-row section-divider">
       <view class="setting-main">
         <text class="setting-label">每周一 {{weeklySummaryTime}} 周报</text>
-        <text class="setting-desc">统计上一周周一到周日，仅聚焦生成报告时仍未完成的父任务。</text>
+        <text class="setting-desc">通过飞书卡片汇总上一周周一到周日的任务完成情况。</text>
       </view>
       <switch checked="{{form.weeklyEnabled}}" bindchange="onToggleWeeklyEnabled" color="#21bfff"></switch>
-    </view>
-
-    <view class="form-item">
-      <text class="label">方糖 SendKey</text>
-      <input
-        class="input"
-        placeholder="{{hasSendKey ? '如需修改请输入新值' : '请输入 SendKey'}}"
-        value="{{form.sendKey}}"
-        bindinput="onSendKeyInput"
-        adjust-position="{{false}}"
-      />
-      <view class="hint-row" wx:if="{{hasSendKey && !pendingClearSendKey}}">
-        <text class="hint">已配置：{{sendKeyMasked}}</text>
-        <text class="clear-btn" bindtap="onClearSendKey">清除</text>
-      </view>
-      <text class="hint hint-warn" wx:elif="{{pendingClearSendKey}}">保存后将清除已有配置</text>
-      <text class="hint" wx:else>尚未配置 SendKey</text>
     </view>
 
     <view class="form-item">
@@ -61,7 +44,7 @@
       <text class="hint" wx:else>尚未配置飞书 Webhook</text>
     </view>
 
-    <view class="tip">日报标题固定为"今日待办：未完成 X，已完成 Y，完成率 Z%"；周报标题固定为"上周任务：未完成 X，已完成 Y，完成率 Z%"。</view>
+    <view class="tip">日报标题为“任务精灵：日报”，周报标题为“任务精灵：周报”。任务数、已完成、未完成、完成率分别独占一行。</view>
     <view class="last-test {{lastTestStatus==='failed' ? 'failed' : ''}}">{{lastTestText}}</view>
     <view class="error-text" wx:if="{{lastTestStatus==='failed' && lastTestErrorMessage}}">{{lastTestErrorMessage}}</view>
 

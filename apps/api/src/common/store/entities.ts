@@ -75,7 +75,7 @@ export type NotificationSettingEntity = {
   enabled: boolean;
   dailyEnabled: boolean;
   weeklyEnabled: boolean;
-  sendKey: string;
+  feishuWebhook: string;
   lastTestAt: number;
   lastTestStatus: string;
   lastTestErrorMessage: string;

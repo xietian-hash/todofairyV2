@@ -359,6 +359,7 @@ paths:
     get:
       tags: [Notifications]
       summary: 查询通知设置
+      description: 仅返回飞书地址的配置状态和脱敏值、日报周报开关、发送时间及最近测试结果，不返回 SendKey、hasSendKey 或 sendKeyMasked。
       security:
         - bearerAuth: []
       responses:
@@ -371,6 +372,7 @@ paths:
     put:
       tags: [Notifications]
       summary: 保存通知设置
+      description: 仅处理 dailyEnabled、weeklyEnabled、feishuWebhook。飞书地址省略时保留，空字符串表示清除；任一提醒开启时必须配置飞书地址。旧请求中的 sendKey 忽略，不修改数据库旧值。
       security:
         - bearerAuth: []
       responses:
@@ -384,6 +386,7 @@ paths:
     post:
       tags: [Notifications]
       summary: 测试日报发送
+      description: 发送蓝色飞书日报卡片，标题“任务精灵：日报（测试）”。正文日期后依次独立成行显示任务数、已完成、未完成、完成率。测试日志使用独立通道，不影响正式通知。
       security:
         - bearerAuth: []
       responses:
@@ -397,6 +400,7 @@ paths:
     post:
       tags: [Notifications]
       summary: 测试周报发送
+      description: 发送紫色飞书周报卡片，标题“任务精灵：周报（测试）”，展示上周日期范围和每行一项的四项统计。不受周一限制，只尝试一次；使用独立测试通道，不影响正式通知。
       security:
         - bearerAuth: []
       responses:
@@ -410,6 +414,7 @@ paths:
     post:
       tags: [Notifications]
       summary: 预览通知文案
+      description: 按现有统计规则返回 title、content、summary、generatedAt。正文日期及四项统计各占一行，不调用AI，不返回 aiUsed、aiFallbackReason、temporary、temporaryTag。
       security:
         - bearerAuth: []
       responses:
@@ -448,6 +453,7 @@ paths:
     post:
       tags: [Internal]
       summary: 每日日报通知
+      description: 后台每天北京时间22点自动执行同一发送逻辑。飞书为蓝色卡片，标题“任务精灵：日报”，日期及四项统计各占一行。已成功的正式通知跳过，历史测试记录不阻断正式发送。返回发送成功、失败与跳过数。
       responses:
         '200':
           description: 成功
@@ -459,6 +465,7 @@ paths:
     post:
       tags: [Internal]
       summary: 每周周报通知
+      description: 后台每周一北京时间9点自动执行同一发送逻辑，非周一跳过。汇总上周周一至周日，飞书为紫色卡片，标题“任务精灵：周报”，日期范围及四项统计各占一行。失败同次最多尝试3次，测试记录不影响正式发送。
       responses:
         '200':
           description: 成功

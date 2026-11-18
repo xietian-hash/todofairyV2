@@ -7,8 +7,6 @@ import { PrismaService } from "../../common/database/prisma.service";
 import { toNotificationSettingsResponse, toTodoResponse } from "../../common/database/prisma-helpers";
 import { classifyTodos } from "../../common/database/todo-classification";
 import {
-  buildDailySummaryText,
-  buildWeeklySummaryText,
   finalizeSummary,
   getNowMs,
   lastWeekRange,
@@ -18,14 +16,8 @@ import {
 
 const DAILY_NOTIFY_TIME = "22:00";
 const WEEKLY_NOTIFY_TIME = "09:00";
-const DAILY_NOTIFY_CHANNEL = "serverchan_daily_2200";
-const WEEKLY_NOTIFY_CHANNEL = "serverchan_weekly_0900";
 const FEISHU_DAILY_CHANNEL = "feishu_daily_2200";
 const FEISHU_WEEKLY_CHANNEL = "feishu_weekly_0900";
-
-function normalizeSendKey(value: unknown) {
-  return String(value || "").trim();
-}
 
 function normalizeWebhookUrl(value: unknown) {
   return String(value || "").trim();
@@ -47,7 +39,6 @@ export class NotificationsService {
       where: { userId },
     });
 
-    const incomingSendKey = payload.sendKey === undefined ? null : normalizeSendKey(payload.sendKey);
     const incomingFeishuWebhook = payload.feishuWebhook === undefined ? null : normalizeWebhookUrl(payload.feishuWebhook);
 
     const dailyEnabled =
@@ -55,11 +46,10 @@ export class NotificationsService {
     const weeklyEnabled =
       payload.weeklyEnabled !== undefined ? Boolean(payload.weeklyEnabled) : Boolean(existing?.weeklyEnabled);
 
-    const nextSendKey = incomingSendKey === null ? normalizeSendKey(existing?.sendKey) : incomingSendKey;
     const nextFeishuWebhook = incomingFeishuWebhook === null ? normalizeWebhookUrl(existing?.feishuWebhook) : incomingFeishuWebhook;
 
-    if ((dailyEnabled || weeklyEnabled) && !nextSendKey && !nextFeishuWebhook) {
-      throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "开启提醒前请先配置 SendKey 或飞书 Webhook 地址");
+    if ((dailyEnabled || weeklyEnabled) && !nextFeishuWebhook) {
+      throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "开启提醒前请先配置飞书 Webhook 地址");
     }
 
     const now = getNowMs();
@@ -69,7 +59,6 @@ export class NotificationsService {
           data: {
             dailyEnabled,
             weeklyEnabled,
-            sendKey: nextSendKey,
             feishuWebhook: nextFeishuWebhook,
             updatedAt: BigInt(now),
           },
@@ -77,7 +66,6 @@ export class NotificationsService {
       : await this.prisma.notificationSetting.create({
           data: {
             userId,
-            sendKey: nextSendKey,
             feishuWebhook: nextFeishuWebhook,
             dailyEnabled,
             weeklyEnabled,
@@ -94,9 +82,9 @@ export class NotificationsService {
   }
 
   async sendTestNotification(userId: string, traceId = "") {
-    const channels = await this.ensureAnyChannelConfigured(userId);
+    const channels = await this.ensureFeishuConfigured(userId);
     const summary = await this.buildDailySummary(userId, todayStr());
-    const title = buildDailySummaryText(summary);
+    const title = "任务精灵：日报（测试）";
     const content = this.buildDailyContent(summary);
 
     let testStatus = "success";
@@ -105,7 +93,7 @@ export class NotificationsService {
     if (channels.feishuWebhook) {
       try {
         await this.sendToFeishu(channels.feishuWebhook, title, content);
-        await this.upsertDeliveryLog(userId, todayStr(), FEISHU_DAILY_CHANNEL, {
+        await this.upsertDeliveryLog(userId, todayStr(), `${FEISHU_DAILY_CHANNEL}_test`, {
           status: "success",
           title,
           content,
@@ -117,7 +105,7 @@ export class NotificationsService {
       } catch (err: any) {
         testStatus = "failed";
         testError = err?.message || "飞书发送失败";
-        await this.upsertDeliveryLog(userId, todayStr(), FEISHU_DAILY_CHANNEL, {
+        await this.upsertDeliveryLog(userId, todayStr(), `${FEISHU_DAILY_CHANNEL}_test`, {
           status: "failed",
           title,
           content,
@@ -127,18 +115,6 @@ export class NotificationsService {
           attemptCount: 1,
         });
       }
-    }
-
-    if (channels.sendKey) {
-      await this.upsertDeliveryLog(userId, todayStr(), DAILY_NOTIFY_CHANNEL, {
-        status: "success",
-        title,
-        content,
-        source: "manual_test_daily",
-        errorMessage: "",
-        traceId,
-        attemptCount: 1,
-      });
     }
 
     await this.persistTestResult(userId, testStatus, testError);
@@ -151,9 +127,9 @@ export class NotificationsService {
   }
 
   async sendWeeklyTestNotification(userId: string, traceId = "") {
-    const channels = await this.ensureAnyChannelConfigured(userId);
+    const channels = await this.ensureFeishuConfigured(userId);
     const summary = await this.buildWeeklySummary(userId, todayStr());
-    const title = buildWeeklySummaryText(summary);
+    const title = "任务精灵：周报（测试）";
     const content = this.buildWeeklyContent(summary);
 
     let testStatus = "success";
@@ -162,7 +138,7 @@ export class NotificationsService {
     if (channels.feishuWebhook) {
       try {
         await this.sendToFeishu(channels.feishuWebhook, title, content);
-        await this.upsertDeliveryLog(userId, summary.endDate, FEISHU_WEEKLY_CHANNEL, {
+        await this.upsertDeliveryLog(userId, summary.endDate, `${FEISHU_WEEKLY_CHANNEL}_test`, {
           status: "success",
           title,
           content,
@@ -174,7 +150,7 @@ export class NotificationsService {
       } catch (err: any) {
         testStatus = "failed";
         testError = err?.message || "飞书发送失败";
-        await this.upsertDeliveryLog(userId, summary.endDate, FEISHU_WEEKLY_CHANNEL, {
+        await this.upsertDeliveryLog(userId, summary.endDate, `${FEISHU_WEEKLY_CHANNEL}_test`, {
           status: "failed",
           title,
           content,
@@ -184,18 +160,6 @@ export class NotificationsService {
           attemptCount: 1,
         });
       }
-    }
-
-    if (channels.sendKey) {
-      await this.upsertDeliveryLog(userId, summary.endDate, WEEKLY_NOTIFY_CHANNEL, {
-        status: "success",
-        title,
-        content,
-        source: "manual_test_weekly",
-        errorMessage: "",
-        traceId,
-        attemptCount: 1,
-      });
     }
 
     await this.persistTestResult(userId, testStatus, testError);
@@ -211,14 +175,10 @@ export class NotificationsService {
     const date = payload.date ? String(payload.date) : todayStr();
     const summary = await this.buildDailySummary(userId, date);
     return {
-      title: buildDailySummaryText(summary),
+      title: "任务精灵：日报",
       content: this.buildDailyContent(summary),
-      aiUsed: false,
-      aiFallbackReason: "当前已切到 MySQL 适配层，仍使用规则模板生成",
       summary,
       generatedAt: getNowMs(),
-      temporary: true,
-      temporaryTag: "MYSQL_RULE_BASED",
     };
   }
 
@@ -227,7 +187,7 @@ export class NotificationsService {
     const enabledUsers = await this.prisma.notificationSetting.findMany({
       where: {
         dailyEnabled: true,
-        OR: [{ sendKey: { not: "" } }, { feishuWebhook: { not: "" } }],
+        feishuWebhook: { not: "" },
       },
     });
 
@@ -237,26 +197,12 @@ export class NotificationsService {
 
     for (const settings of enabledUsers) {
       const summary = await this.buildDailySummary(settings.userId, summaryDate);
-      const title = buildDailySummaryText(summary);
+      const title = "任务精灵：日报";
       const content = this.buildDailyContent(summary);
-
-      if (settings.sendKey) {
-        const existed = await this.prisma.notificationLog.findFirst({
-          where: { userId: settings.userId, summaryDate, channel: DAILY_NOTIFY_CHANNEL, status: "success" },
-        });
-        if (existed) {
-          skippedCount += 1;
-        } else {
-          await this.upsertDeliveryLog(settings.userId, summaryDate, DAILY_NOTIFY_CHANNEL, {
-            status: "success", title, content, source, errorMessage: "", traceId, attemptCount: 1,
-          });
-          successCount += 1;
-        }
-      }
 
       if (settings.feishuWebhook) {
         const existed = await this.prisma.notificationLog.findFirst({
-          where: { userId: settings.userId, summaryDate, channel: FEISHU_DAILY_CHANNEL, status: "success" },
+          where: { userId: settings.userId, summaryDate, channel: FEISHU_DAILY_CHANNEL, status: "success", source: { not: "manual_test_daily" } },
         });
         if (existed) {
           skippedCount += 1;
@@ -309,7 +255,7 @@ export class NotificationsService {
     const enabledUsers = await this.prisma.notificationSetting.findMany({
       where: {
         weeklyEnabled: true,
-        OR: [{ sendKey: { not: "" } }, { feishuWebhook: { not: "" } }],
+        feishuWebhook: { not: "" },
       },
     });
 
@@ -320,41 +266,30 @@ export class NotificationsService {
 
     for (const settings of enabledUsers) {
       const summary = await this.buildWeeklySummary(settings.userId, today);
-      const title = buildWeeklySummaryText(summary);
+      const title = "任务精灵：周报";
       const content = this.buildWeeklyContent(summary);
-
-      if (settings.sendKey) {
-        const existed = await this.prisma.notificationLog.findFirst({
-          where: { userId: settings.userId, summaryDate: range.end, channel: WEEKLY_NOTIFY_CHANNEL, status: "success" },
-        });
-        if (existed) {
-          skippedCount += 1;
-        } else {
-          await this.upsertDeliveryLog(settings.userId, range.end, WEEKLY_NOTIFY_CHANNEL, {
-            status: "success", title, content, source, errorMessage: "", traceId, attemptCount: 1,
-          });
-          successCount += 1;
-        }
-      }
 
       if (settings.feishuWebhook) {
         const existed = await this.prisma.notificationLog.findFirst({
-          where: { userId: settings.userId, summaryDate: range.end, channel: FEISHU_WEEKLY_CHANNEL, status: "success" },
+          where: { userId: settings.userId, summaryDate: range.end, channel: FEISHU_WEEKLY_CHANNEL, status: "success", source: { not: "manual_test_weekly" } },
         });
         if (existed) {
           skippedCount += 1;
         } else {
-          try {
-            await this.sendToFeishu(settings.feishuWebhook, title, content);
-            await this.upsertDeliveryLog(settings.userId, range.end, FEISHU_WEEKLY_CHANNEL, {
-              status: "success", title, content, source, errorMessage: "", traceId, attemptCount: 1,
-            });
-            successCount += 1;
-          } catch (err: any) {
-            await this.upsertDeliveryLog(settings.userId, range.end, FEISHU_WEEKLY_CHANNEL, {
-              status: "failed", title, content, source, errorMessage: err?.message || "", traceId, attemptCount: 1,
-            });
-            failedCount += 1;
+          for (let attempt = 1; attempt <= 3; attempt += 1) {
+            try {
+              await this.sendToFeishu(settings.feishuWebhook, title, content);
+              await this.upsertDeliveryLog(settings.userId, range.end, FEISHU_WEEKLY_CHANNEL, {
+                status: "success", title, content, source, errorMessage: "", traceId, attemptCount: 1,
+              });
+              successCount += 1;
+              break;
+            } catch (err: any) {
+              await this.upsertDeliveryLog(settings.userId, range.end, FEISHU_WEEKLY_CHANNEL, {
+                status: "failed", title, content, source, errorMessage: err?.message || "", traceId, attemptCount: 1,
+              });
+              if (attempt === 3) failedCount += 1;
+            }
           }
         }
       }
@@ -372,16 +307,15 @@ export class NotificationsService {
     };
   }
 
-  private async ensureAnyChannelConfigured(userId: string) {
+  private async ensureFeishuConfigured(userId: string) {
     const settings = await this.prisma.notificationSetting.findUnique({
       where: { userId },
     });
-    const sendKey = normalizeSendKey(settings?.sendKey);
     const feishuWebhook = normalizeWebhookUrl(settings?.feishuWebhook);
-    if (!sendKey && !feishuWebhook) {
-      throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "请先配置 SendKey 或飞书 Webhook 地址");
+    if (!feishuWebhook) {
+      throw new AppException(400, ERROR_CODES.VALIDATION_ERROR, "请先配置飞书 Webhook 地址");
     }
-    return { sendKey, feishuWebhook };
+    return { feishuWebhook };
   }
 
   private async persistTestResult(userId: string, status: string, errorMessage: string) {
@@ -404,8 +338,15 @@ export class NotificationsService {
   private sendToFeishu(webhookUrl: string, title: string, content: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const body = JSON.stringify({
-        msg_type: "text",
-        content: { text: `${title}\n${content}` },
+        msg_type: "interactive",
+        card: {
+          schema: "2.0",
+          header: {
+            title: { tag: "plain_text", content: title },
+            template: title.includes("周报") ? "purple" : "blue",
+          },
+          body: { elements: content.split("\n").map((line) => ({ tag: "div", text: { tag: "plain_text", content: line } })) },
+        },
       });
       let parsedUrl: URL;
       try {
@@ -416,32 +357,35 @@ export class NotificationsService {
       if (parsedUrl.protocol !== "https:") {
         return reject(new Error("飞书 Webhook 地址必须使用 HTTPS"));
       }
-      const options = {
+      const req = https.request({
         hostname: parsedUrl.hostname,
+        port: parsedUrl.port || undefined,
         path: parsedUrl.pathname + parsedUrl.search,
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
-      };
-      const req = https.request(options, (res) => {
+        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      }, (res) => {
         let data = "";
         res.on("data", (chunk) => { data += chunk; });
+        res.on("error", () => reject(new Error("飞书响应读取失败")));
+        res.on("aborted", () => reject(new Error("飞书响应中断")));
         res.on("end", () => {
+          if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
+            return reject(new Error(`飞书请求失败，HTTP状态码：${res.statusCode || "未知"}`));
+          }
           try {
             const result = JSON.parse(data);
-            if (result.code !== 0) {
-              reject(new Error(`飞书返回错误: ${result.msg || JSON.stringify(result)}`));
+            if ((result?.code ?? result?.StatusCode) !== 0) {
+              reject(new Error("飞书未确认接收成功"));
             } else {
               resolve();
             }
           } catch {
-            resolve();
+            reject(new Error("飞书响应格式不正确"));
           }
         });
       });
-      req.on("error", (err) => reject(new Error(`飞书请求失败: ${err.message}`)));
+      req.setTimeout(20000, () => req.destroy(new Error("请求超时")));
+      req.on("error", () => reject(new Error("飞书请求失败或超时")));
       req.write(body);
       req.end();
     });
@@ -474,11 +418,11 @@ export class NotificationsService {
   }
 
   private buildDailyContent(summary: { date: string; total: number; completedCount: number; uncompletedCount: number; completionRate: number }) {
-    return `${summary.date} 共 ${summary.total} 个任务，已完成 ${summary.completedCount} 个，未完成 ${summary.uncompletedCount} 个，完成率 ${summary.completionRate}%。`;
+    return `日期：${summary.date}\n任务数：${summary.total}\n已完成：${summary.completedCount}\n未完成：${summary.uncompletedCount}\n完成率：${summary.completionRate}%`;
   }
 
   private buildWeeklyContent(summary: { startDate: string; endDate: string; total: number; completedCount: number; uncompletedCount: number; completionRate: number }) {
-    return `${summary.startDate} 至 ${summary.endDate} 共 ${summary.total} 个任务，已完成 ${summary.completedCount} 个，未完成 ${summary.uncompletedCount} 个，完成率 ${summary.completionRate}%。`;
+    return `日期：${summary.startDate} 至 ${summary.endDate}\n任务数：${summary.total}\n已完成：${summary.completedCount}\n未完成：${summary.uncompletedCount}\n完成率：${summary.completionRate}%`;
   }
 
   private async upsertDeliveryLog(

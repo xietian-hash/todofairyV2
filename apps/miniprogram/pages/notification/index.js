@@ -45,12 +45,8 @@ Page({
     form: {
       dailyEnabled: false,
       weeklyEnabled: false,
-      sendKey: "",
       feishuWebhook: "",
     },
-    hasSendKey: false,
-    sendKeyMasked: "",
-    pendingClearSendKey: false,
     hasFeishuWebhook: false,
     feishuWebhookMasked: "",
     pendingClearFeishuWebhook: false,
@@ -125,11 +121,7 @@ Page({
     this.setData({
       "form.dailyEnabled": Boolean(data.dailyEnabled !== undefined ? data.dailyEnabled : data.enabled),
       "form.weeklyEnabled": Boolean(data.weeklyEnabled),
-      "form.sendKey": "",
       "form.feishuWebhook": "",
-      hasSendKey: Boolean(data.hasSendKey),
-      sendKeyMasked: data.sendKeyMasked || "",
-      pendingClearSendKey: false,
       hasFeishuWebhook: Boolean(data.hasFeishuWebhook),
       feishuWebhookMasked: data.feishuWebhookMasked || "",
       pendingClearFeishuWebhook: false,
@@ -153,21 +145,6 @@ Page({
     });
   },
 
-  onSendKeyInput(e) {
-    this.setData({
-      "form.sendKey": e.detail.value || "",
-    });
-  },
-
-  onClearSendKey() {
-    this.setData({
-      pendingClearSendKey: true,
-      hasSendKey: false,
-      sendKeyMasked: "",
-      "form.sendKey": "",
-    });
-  },
-
   onFeishuWebhookInput(e) {
     this.setData({
       "form.feishuWebhook": e.detail.value || "",
@@ -188,12 +165,6 @@ Page({
       dailyEnabled: Boolean(this.data.form.dailyEnabled),
       weeklyEnabled: Boolean(this.data.form.weeklyEnabled),
     };
-    const sendKey = String(this.data.form.sendKey || "").trim();
-    if (sendKey) {
-      payload.sendKey = sendKey;
-    } else if (this.data.pendingClearSendKey) {
-      payload.sendKey = "";
-    }
     const feishuWebhook = String(this.data.form.feishuWebhook || "").trim();
     if (feishuWebhook) {
       payload.feishuWebhook = feishuWebhook;
@@ -213,9 +184,10 @@ Page({
       this.setData({
         "form.dailyEnabled": Boolean(latest.dailyEnabled !== undefined ? latest.dailyEnabled : latest.enabled),
         "form.weeklyEnabled": Boolean(latest.weeklyEnabled),
-        "form.sendKey": "",
-        hasSendKey: Boolean(latest.hasSendKey),
-        sendKeyMasked: latest.sendKeyMasked || "",
+        "form.feishuWebhook": "",
+        hasFeishuWebhook: Boolean(latest.hasFeishuWebhook),
+        feishuWebhookMasked: latest.feishuWebhookMasked || "",
+        pendingClearFeishuWebhook: false,
         dailySummaryTime: latest.dailySummaryTime || "22:00",
         weeklySummaryTime: latest.weeklySummaryTime || "09:00",
         lastTestText: formatLastTestText(latest),
